@@ -1,21 +1,94 @@
-# 🛰 Legendary OSINT
+# 🛰 AAA_OSINT
 
-A curated list of **OSINT** tools & resources.  
-The sources where I got this from include newsletters, Telegram groups, curated startpages, GitHub repos, and other public collections.  
+A curated collection of **940+ OSINT tools & resources** across **25 categories**, paired with a fast, modern interactive web interface to explore, filter, and search tools in real time.
 
-⚠️ Most tools are **third-party**, always vet and use responsibly.
-⭐ If you use this repository, don't forget to star it and incluse me as a source.
+The sources include specialized security newsletters, research teams, investigative communities, curated startpages, GitHub repositories, and open-source intelligence databases.
+
+⚠️ **Disclaimer:** Most listed tools are third-party services. Always vet and use them responsibly within authorized legal frameworks.
 
 ---
 
-## 📖 Table of Contents
+## ⚡ Quick Start: Running on Localhost
+
+You can run the web dashboard locally in seconds with **Node.js**:
+
+### 1. Clone the repository
+```bash
+git clone https://github.com/kalidraco/AAA_OSINT.git
+cd AAA_OSINT
+```
+
+### 2. Start the local server
+```bash
+npm run dev
+```
+
+This will automatically parse all documentation in `docs/`, generate `site/data.json`, and start a lightweight local web server.
+
+### 3. Open in your browser
+Navigate to:
+```
+http://localhost:3000
+```
+
+---
+
+## 🛠 Available NPM Scripts
+
+| Command | Action |
+|---|---|
+| `npm run dev` | Rebuilds the data JSON and launches the local dev server on port `3000` |
+| `npm run build` | Parses all markdown files in `docs/` and generates `site/data.json` |
+| `npm run serve` | Serves the existing `site/` folder directly on port `3000` |
+
+---
+
+## ✨ Web App Features
+
+- 🔍 **Real-Time Instant Search:** Fuzzy search across tool names, descriptions, and domains (press <kbd>/</kbd> to focus, <kbd>Esc</kbd> to clear).
+- 🏷️ **Category Filter Chips:** 25 interactive category chips in a sticky navigation bar with live tool count indicators.
+- 🌐 **Automatic Favicon Resolution:** Auto-fetches official platform favicons for rapid visual identification.
+- 🎨 **Deep-Space Dark Aesthetic:** High-contrast, clean typography (`Inter` + `JetBrains Mono`) with subtle ambient glowing backdrops.
+- 📱 **Fully Responsive:** Adapts seamlessly from mobile screens to ultra-wide desktop monitors.
+- ⚡ **Zero External Backend Required:** Pure static HTML/CSS/JS frontend powered by an auto-generated JSON catalog.
+
+---
+
+## 📁 Repository Structure
+
+```
+AAA_OSINT/
+├── docs/                     # 25 categorized OSINT markdown documentation files
+│   ├── academic.md
+│   ├── ai-osint.md
+│   ├── aviation.md
+│   ├── malware-cti.md
+│   ├── people-social.md
+│   └── ...
+├── scripts/
+│   └── build-data.js         # Node.js script that parses docs/ into site/data.json
+├── site/                     # Web application source files
+│   ├── index.html            # Main dashboard HTML
+│   ├── style.css             # Design system & styles
+│   ├── app.js                # Search, filtering, and animation logic
+│   ├── data.json             # Structured JSON dataset (947 tools)
+│   └── favicon.svg           # Site favicon
+├── package.json              # NPM scripts & project configuration
+├── CONTRIBUTING.md           # Guidelines for contributing new tools
+├── CODE_OF_CONDUCT.md        # Community code of conduct
+└── LICENSE                   # CC0 1.0 Universal License
+```
+
+---
+
+## 📖 Table of Contents & Categories
 
 - [📚 Academic & Research Databases](./docs/academic.md)  
 - [🧠 AI & OSINT Assistance](./docs/ai-osint.md)
 - [🤖 Automation & Recon Frameworks](./docs/automation-recon.md) 
 - [✈️ Aviation Movements & Flight Tracking](./docs/aviation.md)
 - [💼 Business & Company Intelligence](./docs/business-intel.md) 
- - [📻 Communications & SIGINT](./docs/comms.md)    
+- [📻 Communications & SIGINT](./docs/comms.md)    
 - [🕳 Dark Web & Leaks](./docs/darkweb-leaks.md)
 - [📑 Document & File Search](./docs/document-file.md)  
 - [🌍 Domains, IPs & Infrastructure](./docs/infra-domains.md) 
@@ -29,7 +102,7 @@ The sources where I got this from include newsletters, Telegram groups, curated 
 - [🧑‍🤝‍🧑 OSINT for Good (NGOs & Initiatives)](./docs/osint-for-good.md)  
 - [👤 People Search & Social Media](./docs/people-social.md)  
 - [🎣 Phishing & Email Investigation](./docs/phishing-email.md)  
-- [🚂 Railways, live train maps and more](./docs/railways.md)  
+- [🚂 Railways, Live Train Maps & Transport](./docs/railways.md)  
 - [📝 Reporting & Visualization](./docs/reporting-visualization.md) 
 - [🔍 Search Engines](./docs/search-engines.md)  
 - [⚓ Vessel Movements, Databases & Shipping](./docs/maritime.md)
@@ -40,17 +113,15 @@ The sources where I got this from include newsletters, Telegram groups, curated 
 
 ## 🤝 Contributing
 
-Want to add tools or fix something? Please read our [Contributing Guidelines](./CONTRIBUTING.md).
-
----
-
-## 📜 Code of Conduct
-
-This project follows a [Code of Conduct](./CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
+Contributions are welcome! If you'd like to suggest new tools, update links, or fix typos:
+1. Fork the repository.
+2. Add or update the corresponding entry in the relevant file under `docs/`.
+3. Run `npm run build` to test that the JSON builds cleanly.
+4. Submit a Pull Request following our [Contributing Guidelines](./CONTRIBUTING.md).
 
 ---
 
 ## ⚖️ License
 
-This project is licensed under [CC0 1.0 Universal](./LICENSE) — no rights reserved.  
-Use, modify, or share freely. Attribution is appreciated.  
+This project is licensed under [CC0 1.0 Universal](./LICENSE) — Public Domain Dedication.  
+Use, modify, and share freely. Attribution is always appreciated!

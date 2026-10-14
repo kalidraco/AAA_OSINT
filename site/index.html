@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AAA_OSINT — Curated OSINT Tools & Resources</title>
+  <meta name="description" content="AAA_OSINT — A curated collection of 940+ OSINT tools and resources across 25 categories. Open source intelligence tools for researchers, investigators, and analysts.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Ambient background effects -->
+  <div class="bg-grid"></div>
+  <div class="bg-glow bg-glow--1"></div>
+  <div class="bg-glow bg-glow--2"></div>
+  <div class="bg-glow bg-glow--3"></div>
+
+  <!-- Header / Hero -->
+  <header class="hero" id="hero">
+    <div class="hero__badge">OPEN SOURCE INTELLIGENCE</div>
+    <h1 class="hero__title">
+      <span class="hero__title-icon">🛰</span>
+      AAA_<span class="hero__accent">OSINT</span>
+    </h1>
+    <p class="hero__subtitle">
+      A curated collection of <strong id="stat-tools">—</strong> tools & resources across <strong id="stat-categories">—</strong> categories.
+    </p>
+    <div class="hero__search-wrap">
+      <div class="search-box" id="search-box">
+        <svg class="search-box__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="search-input" class="search-box__input" placeholder="Search tools, categories, or descriptions…" autocomplete="off">
+        <kbd class="search-box__kbd" id="search-kbd">/</kbd>
+        <button class="search-box__clear" id="search-clear" aria-label="Clear search" style="display:none;">✕</button>
+      </div>
+    </div>
+    <div class="hero__stats" id="hero-stats"></div>
+  </header>
+
+  <!-- Category nav chips -->
+  <nav class="cat-nav" id="cat-nav">
+    <div class="cat-nav__inner" id="cat-nav-inner"></div>
+  </nav>
+
+  <!-- Main content -->
+  <main class="main" id="main">
+    <div class="results-info" id="results-info" style="display:none;"></div>
+    <div id="categories-container"></div>
+    <div class="empty-state" id="empty-state" style="display:none;">
+      <div class="empty-state__icon">🔍</div>
+      <h2>No results found</h2>
+      <p>Try a different search term or browse categories above.</p>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>
+      <a href="https://github.com/kalidraco/AAA_OSINT" target="_blank" rel="noopener">AAA_OSINT</a> — Licensed under <a href="./LICENSE" target="_blank">CC0 1.0</a>
+    </p>
+    <p class="footer__note">⚠️ Most tools are third-party. Always vet and use responsibly.</p>
+  </footer>
+
+  <!-- Back to top -->
+  <button class="back-to-top" id="back-to-top" aria-label="Back to top">↑</button>
+
+  <script src="app.js"></script>
+</body>
+</html>

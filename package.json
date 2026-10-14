@@ -1,0 +1,12 @@
+{
+  "name": "aaa_osint",
+  "version": "1.0.0",
+  "description": "AAA_OSINT — A curated collection of 940+ OSINT tools & resources with an interactive web UI",
+  "scripts": {
+    "build": "node scripts/build-data.js",
+    "dev": "node scripts/build-data.js && npx -y serve site -l 3000",
+    "serve": "npx -y serve site -l 3000"
+  },
+  "keywords": ["osint", "tools", "resources", "intelligence", "investigations"],
+  "license": "CC0-1.0"
+}
