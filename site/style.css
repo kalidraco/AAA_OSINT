@@ -478,14 +478,16 @@ body.sidebar-collapsed .sidebar-item:hover::after {
   position: relative;
   z-index: 1;
   flex: 1;
-  max-width: 1200px;
-  margin-left: var(--sidebar-width);
-  padding: 28px 28px 80px;
-  transition: margin-left var(--transition-base);
+  width: 100%;
+  max-width: 1600px;
+  padding: 28px 36px 80px;
+  padding-left: calc(var(--sidebar-width) + 36px);
+  margin: 0 auto;
+  transition: padding-left var(--transition-base);
   min-width: 0;
 }
 body.sidebar-collapsed .main {
-  margin-left: var(--sidebar-collapsed);
+  padding-left: calc(var(--sidebar-collapsed) + 36px);
 }
 
 /* Sidebar overlay (mobile) */
@@ -584,8 +586,8 @@ body.sidebar-collapsed .main {
    ============================================================ */
 .tools-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
 }
 
 .tool-card {
@@ -700,14 +702,14 @@ mark {
   z-index: 1;
   text-align: center;
   padding: 32px 24px;
+  padding-left: calc(var(--sidebar-width) + 24px);
   border-top: 1px solid var(--border-subtle);
   color: var(--text-muted);
   font-size: 12px;
-  margin-left: var(--sidebar-width);
-  transition: margin-left var(--transition-base);
+  transition: padding-left var(--transition-base);
 }
 body.sidebar-collapsed .footer {
-  margin-left: var(--sidebar-collapsed);
+  padding-left: calc(var(--sidebar-collapsed) + 24px);
 }
 .footer a { color: var(--accent-cyan); }
 .footer__note {
@@ -794,12 +796,13 @@ body.sidebar-collapsed .footer {
   .sidebar__collapse-btn { display: none; }
 
   .main {
-    margin-left: 0;
     padding: 20px 16px 64px;
+    padding-left: 16px;
+    max-width: 100%;
   }
 
   .footer {
-    margin-left: 0;
+    padding-left: 24px;
   }
 
   .tools-grid {
@@ -807,10 +810,10 @@ body.sidebar-collapsed .footer {
   }
 
   body.sidebar-collapsed .main {
-    margin-left: 0;
+    padding-left: 16px;
   }
   body.sidebar-collapsed .footer {
-    margin-left: 0;
+    padding-left: 24px;
   }
 }
 
