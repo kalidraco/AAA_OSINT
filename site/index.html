@@ -38,9 +38,27 @@
     <div class="hero__stats" id="hero-stats"></div>
   </header>
 
-  <!-- Category nav chips -->
-  <nav class="cat-nav" id="cat-nav">
-    <div class="cat-nav__inner" id="cat-nav-inner"></div>
+  <!-- Category nav chips with side navigation buttons -->
+  <nav class="cat-nav" id="cat-nav" aria-label="Category navigation">
+    <div class="cat-nav__wrapper">
+      <div class="cat-nav__edge cat-nav__edge--left is-hidden" id="cat-nav-edge-left">
+        <button class="cat-nav__btn cat-nav__btn--prev" id="cat-nav-prev" aria-label="Scroll categories left" title="Scroll left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+      </div>
+
+      <div class="cat-nav__inner" id="cat-nav-inner"></div>
+
+      <div class="cat-nav__edge cat-nav__edge--right" id="cat-nav-edge-right">
+        <button class="cat-nav__btn cat-nav__btn--next" id="cat-nav-next" aria-label="Scroll categories right" title="Scroll right">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </div>
+    </div>
   </nav>
 
   <!-- Main content -->

@@ -13,6 +13,10 @@
   const searchKbd          = document.getElementById('search-kbd');
   const searchClear        = document.getElementById('search-clear');
   const catNavInner        = document.getElementById('cat-nav-inner');
+  const navPrevBtn         = document.getElementById('cat-nav-prev');
+  const navNextBtn         = document.getElementById('cat-nav-next');
+  const catNavEdgeLeft     = document.getElementById('cat-nav-edge-left');
+  const catNavEdgeRight    = document.getElementById('cat-nav-edge-right');
   const container          = document.getElementById('categories-container');
   const emptyState         = document.getElementById('empty-state');
   const resultsInfo        = document.getElementById('results-info');
@@ -67,6 +71,35 @@
     requestAnimationFrame(tick);
   }
 
+  // --- Category Nav Scrolling ---
+  function getScrollStep() {
+    return Math.max(220, Math.floor(catNavInner.clientWidth * 0.65));
+  }
+
+  function updateNavButtons() {
+    if (!catNavInner) return;
+    const scrollLeft = catNavInner.scrollLeft;
+    const maxScroll = catNavInner.scrollWidth - catNavInner.clientWidth;
+    const canScrollLeft = scrollLeft > 4;
+    const canScrollRight = scrollLeft < maxScroll - 4;
+
+    if (catNavEdgeLeft) {
+      catNavEdgeLeft.classList.toggle('is-hidden', !canScrollLeft);
+    }
+    if (catNavEdgeRight) {
+      catNavEdgeRight.classList.toggle('is-hidden', !canScrollRight);
+    }
+  }
+
+  function centerChip(chip) {
+    if (!chip || !catNavInner) return;
+    const containerWidth = catNavInner.clientWidth;
+    const chipLeft = chip.offsetLeft;
+    const chipWidth = chip.offsetWidth;
+    const targetScroll = chipLeft - (containerWidth / 2) + (chipWidth / 2);
+    catNavInner.scrollTo({ left: targetScroll, behavior: 'smooth' });
+  }
+
   // --- Build Category Nav ---
   function buildNav() {
     const allChip = document.createElement('button');
@@ -76,6 +109,7 @@
     allChip.addEventListener('click', () => {
       activeCategory = null;
       setActiveChip('');
+      centerChip(allChip);
       render();
     });
     catNavInner.appendChild(allChip);
@@ -91,6 +125,7 @@
         searchInput.value = '';
         searchClear.style.display = 'none';
         searchKbd.style.display = '';
+        centerChip(chip);
         render();
         container.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
@@ -267,6 +302,66 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
+  // --- Category Nav Controls & Drag ---
+  if (navPrevBtn) {
+    navPrevBtn.addEventListener('click', () => {
+      catNavInner.scrollBy({ left: -getScrollStep(), behavior: 'smooth' });
+    });
+  }
+
+  if (navNextBtn) {
+    navNextBtn.addEventListener('click', () => {
+      catNavInner.scrollBy({ left: getScrollStep(), behavior: 'smooth' });
+    });
+  }
+
+  catNavInner.addEventListener('scroll', updateNavButtons, { passive: true });
+  window.addEventListener('resize', updateNavButtons, { passive: true });
+
+  // Smooth drag-to-scroll support for mouse
+  let isDown = false;
+  let startX = 0;
+  let scrollStart = 0;
+  let isDraggingNav = false;
+
+  catNavInner.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    isDown = true;
+    isDraggingNav = false;
+    startX = e.pageX - catNavInner.offsetLeft;
+    scrollStart = catNavInner.scrollLeft;
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isDown) return;
+    const x = e.pageX - catNavInner.offsetLeft;
+    const walk = x - startX;
+    if (Math.abs(walk) > 4) {
+      isDraggingNav = true;
+      catNavInner.classList.add('is-dragging');
+    }
+    if (isDraggingNav) {
+      e.preventDefault();
+      catNavInner.scrollLeft = scrollStart - walk;
+    }
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (!isDown) return;
+    isDown = false;
+    catNavInner.classList.remove('is-dragging');
+    setTimeout(() => {
+      isDraggingNav = false;
+    }, 50);
+  });
+
+  catNavInner.addEventListener('click', (e) => {
+    if (isDraggingNav) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+  }, true);
+
   // --- Init ---
   async function init() {
     try {
@@ -289,6 +384,8 @@
 
     buildNav();
     render();
+    requestAnimationFrame(updateNavButtons);
+    setTimeout(updateNavButtons, 100);
   }
 
   init();
