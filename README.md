@@ -45,15 +45,17 @@ http://localhost:3000
 
 ## ✨ Web App Features
 
-- 🗂 **Sidebar Navigation:** Collapsible sidebar with all 25 categories, emoji icons, and live tool counts — replaces the former horizontal chip bar for faster access and better readability.
-- 🔍 **Always-On Search:** Instant search across tool names, descriptions, and domains, accessible from the persistent top bar (press <kbd>/</kbd> to focus, <kbd>Esc</kbd> to clear).
-- 📌 **Compact Top Bar:** Brand, search, and global stats always visible — no large hero section in the way.
-- 🌐 **Automatic Favicon Resolution:** Auto-fetches official platform favicons for rapid visual identification.
-- 🎨 **Deep-Space Dark Aesthetic:** High-contrast dark theme with cyan accents, clean typography (`Inter` + `JetBrains Mono`), and subtle ambient effects.
-- 📱 **Fully Responsive:** Desktop sidebar collapses with tooltips; mobile uses a slide-in drawer with overlay.
-- 💾 **Persistent Preferences:** Sidebar collapsed/expanded state is remembered across sessions via `localStorage`.
-- ⚡ **Zero External Backend Required:** Pure static HTML/CSS/JS frontend powered by an auto-generated JSON catalog.
-- ♿ **Keyboard & Focus Support:** All interactive elements have visible focus states and proper ARIA labels.
+- 🧭 **Structured Operational Domains:** Organizes the 25 OSINT categories into 5 logical investigation domains (Identity, Cyber & Infra, Geospatial & Transport, Intelligence & Legal, Resources & Archiving) with collapsible accordions.
+- 📐 **Resizable & Collapsible Desktop Sidebar:** Drag the sidebar edge to freely adjust width (220px–440px, saved in `localStorage`) or collapse to a 58px icon rail (<kbd>Ctrl+B</kbd> / <kbd>⌘B</kbd>). Double-click the resizer to reset.
+- ⚡ **Instant Omnisearch with Category Chips:** Global search across tool names, domains, descriptions, and categories (<kbd>Ctrl+K</kbd> / <kbd>⌘K</kbd> or <kbd>/</kbd>), with interactive category filter pills.
+- ⭐ **Favorites & Recent History:** Ephemeral bookmarks (★) and automatic investigation history saved locally without requiring an account.
+- 🎛 **Density Modes:** Switch between Standard (Comfortable) and High-Density Compact grid modes to view 30+ tools per screen.
+- ⌨️ **Full Desktop Keyboard Navigation:** Jump through search results with <kbd>↑</kbd> / <kbd>↓</kbd>, open links with <kbd>Enter</kbd>, dismiss with <kbd>Esc</kbd>, and open shortcuts cheatsheet with <kbd>?</kbd>.
+- 🔗 **Quick Subsection Jump Chips:** In categories with multiple subsections, click floating jump chips to instantly scroll to specific groups.
+- 📋 **One-Click URL Copy:** Copy clean tool URLs to your clipboard directly from any card.
+- 🌐 **Automatic Favicon Resolution:** Auto-fetches platform favicons with custom SVG monogram fallbacks for offline resilience.
+- 🎨 **Deep-Space Dark Cyber Aesthetic:** High-contrast palette (`#06080d`) with subtle cyan accents, `Inter` & `JetBrains Mono` typography.
+- 📱 **Multi-Resolution & Split-Screen Support:** Scales from ultra-wide 4K down to 50% split-screen windows and mobile drawers.
 
 ---
 

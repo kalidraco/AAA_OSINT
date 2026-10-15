@@ -1,94 +1,299 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AAA_OSINT — Curated OSINT Tools & Resources</title>
-  <meta name="description" content="AAA_OSINT — A curated collection of 940+ OSINT tools and resources across 25 categories. Open source intelligence tools for researchers, investigators, and analysts.">
+  <title>AAA_OSINT — Espace de Renseignement & Catalogue OSINT</title>
+  <meta name="description" content="AAA_OSINT — Plateforme d'investigation regroupant 947 outils et ressources OSINT à travers 25 catégories opérationnelles pour enquêteurs, analystes et chercheurs.">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <!-- Ambient background effects -->
-  <div class="bg-grid"></div>
-  <div class="bg-glow bg-glow--1"></div>
-  <div class="bg-glow bg-glow--2"></div>
+  <div class="bg-grid" aria-hidden="true"></div>
+  <div class="bg-glow bg-glow--1" aria-hidden="true"></div>
+  <div class="bg-glow bg-glow--2" aria-hidden="true"></div>
 
-  <!-- Mobile overlay -->
+  <!-- Mobile overlay for drawer sidebar -->
   <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
-  <!-- Top bar -->
+  <!-- Top bar (Application Command Header) -->
   <header class="topbar" id="topbar">
     <div class="topbar__left">
-      <button class="topbar__menu-btn" id="sidebar-toggle" aria-label="Toggle navigation">
+      <!-- Mobile hamburger -->
+      <button class="topbar__menu-btn" id="sidebar-toggle" aria-label="Ouvrir la navigation" title="Menu">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="3" y1="6" x2="21" y2="6"></line>
           <line x1="3" y1="12" x2="21" y2="12"></line>
           <line x1="3" y1="18" x2="21" y2="18"></line>
         </svg>
       </button>
-      <div class="topbar__brand">
+
+      <!-- Desktop Sidebar Collapse Toggle -->
+      <button class="topbar__icon-btn desktop-only" id="sidebar-collapse" aria-label="Basculer la barre latérale" title="Basculer la barre latérale (Ctrl+B)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="9" y1="3" x2="9" y2="21"></line>
+          <path d="M14 9l-3 3 3 3"></path>
+        </svg>
+      </button>
+
+      <!-- Brand -->
+      <div class="topbar__brand" id="brand-home" role="button" tabindex="0" title="Retour à la vue d'ensemble">
         <span class="topbar__icon">🛰</span>
-        <span class="topbar__title">AAA_<span class="topbar__accent">OSINT</span></span>
+        <div class="topbar__brand-text">
+          <span class="topbar__title">AAA_<span class="topbar__accent">OSINT</span></span>
+          <span class="topbar__badge">WORKSPACE</span>
+        </div>
       </div>
     </div>
+
+    <!-- Global Search -->
     <div class="topbar__search" id="search-box">
-      <svg class="topbar__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" id="search-input" class="topbar__search-input" placeholder="Search tools, categories…" autocomplete="off">
-      <kbd class="topbar__kbd" id="search-kbd">/</kbd>
-      <button class="topbar__search-clear" id="search-clear" aria-label="Clear search" style="display:none;">✕</button>
+      <svg class="topbar__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input
+        type="text"
+        id="search-input"
+        class="topbar__search-input"
+        placeholder="Rechercher un outil, domaine, description, mot-clé..."
+        autocomplete="off"
+        spellcheck="false"
+      >
+      <kbd class="topbar__kbd" id="search-kbd" title="Raccourci de recherche">Ctrl+K</kbd>
+      <button class="topbar__search-clear" id="search-clear" aria-label="Effacer la recherche" title="Effacer (Esc)" style="display:none;">✕</button>
     </div>
-    <div class="topbar__stats">
-      <span class="topbar__stat"><strong id="stat-tools">—</strong> tools</span>
-      <span class="topbar__stat-sep">·</span>
-      <span class="topbar__stat"><strong id="stat-categories">—</strong> categories</span>
+
+    <!-- Actions & Stats -->
+    <div class="topbar__right">
+      <!-- Density Toggle -->
+      <button class="topbar__icon-btn" id="density-toggle" aria-label="Changer la densité d'affichage" title="Densité d'affichage (Compact / Confortable)">
+        <svg class="icon-dense" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+      </button>
+
+      <!-- Keyboard shortcuts helper -->
+      <button class="topbar__icon-btn" id="shortcuts-toggle" aria-label="Raccourcis clavier" title="Raccourcis clavier (?)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+          <line x1="6" y1="8" x2="6.01" y2="8"></line>
+          <line x1="10" y1="8" x2="10.01" y2="8"></line>
+          <line x1="14" y1="8" x2="14.01" y2="8"></line>
+          <line x1="18" y1="8" x2="18.01" y2="8"></line>
+          <line x1="8" y1="12" x2="16" y2="12"></line>
+          <line x1="6" y1="16" x2="6.01" y2="16"></line>
+          <line x1="18" y1="16" x2="18.01" y2="16"></line>
+        </svg>
+      </button>
+
+      <!-- Live metrics -->
+      <div class="topbar__stats">
+        <span class="topbar__stat"><strong id="stat-tools">—</strong> outils</span>
+        <span class="topbar__stat-sep">·</span>
+        <span class="topbar__stat"><strong id="stat-categories">—</strong> catégories</span>
+      </div>
     </div>
   </header>
 
-  <!-- Layout wrapper -->
+  <!-- Layout Wrapper -->
   <div class="layout" id="layout">
 
-    <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar__header">
-        <span class="sidebar__label">Categories</span>
-        <button class="sidebar__collapse-btn" id="sidebar-collapse" aria-label="Collapse sidebar" title="Collapse sidebar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="11 17 6 12 11 7"></polyline>
-            <polyline points="18 17 13 12 18 7"></polyline>
-          </svg>
-        </button>
+    <!-- Resizable Desktop Sidebar -->
+    <aside class="sidebar" id="sidebar" aria-label="Navigation des catégories OSINT">
+      <!-- Resizer Handle -->
+      <div class="sidebar__resizer" id="sidebar-resizer" title="Glisser pour redimensionner (Double-clic pour réinitialiser)"></div>
+
+      <!-- Quick Access Hub -->
+      <div class="sidebar__quick-hub">
+        <div class="sidebar__group-label">Espace de travail</div>
+        <nav class="sidebar__quick-nav">
+          <button class="sidebar-item sidebar-item--active" data-nav="all" data-tooltip="Tous les outils (947)">
+            <span class="sidebar-item__icon">🌐</span>
+            <span class="sidebar-item__text">Tous les outils</span>
+            <span class="sidebar-item__count" id="count-all">947</span>
+          </button>
+          <button class="sidebar-item" data-nav="favorites" data-tooltip="Favoris enregistrés">
+            <span class="sidebar-item__icon">⭐</span>
+            <span class="sidebar-item__text">Favoris</span>
+            <span class="sidebar-item__count" id="count-favorites">0</span>
+          </button>
+          <button class="sidebar-item" data-nav="recent" data-tooltip="Outils récemment ouverts">
+            <span class="sidebar-item__icon">🕒</span>
+            <span class="sidebar-item__text">Récemment consultés</span>
+            <span class="sidebar-item__count" id="count-recent">0</span>
+          </button>
+        </nav>
       </div>
-      <nav class="sidebar__nav" id="sidebar-nav" aria-label="Category navigation">
-        <!-- "All" item + category items injected by JS -->
-      </nav>
+
+      <!-- Category Filter Search Box -->
+      <div class="sidebar__filter-box">
+        <svg class="sidebar__filter-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input
+          type="text"
+          id="category-filter-input"
+          class="sidebar__filter-input"
+          placeholder="Filtrer les 25 catégories..."
+          autocomplete="off"
+          spellcheck="false"
+        >
+        <button id="category-filter-clear" class="sidebar__filter-clear" aria-label="Effacer le filtre" style="display:none;">✕</button>
+      </div>
+
+      <!-- Categorized Domains Navigation -->
+      <nav class="sidebar__nav" id="sidebar-nav" aria-label="Liste des catégories"></nav>
+
+      <!-- Sidebar Status / Platform Hint -->
+      <div class="sidebar__footer">
+        <div class="sidebar__footer-meta">
+          <span class="sidebar__indicator"></span>
+          <span class="sidebar__footer-text">Base OSINT 2.0 active</span>
+        </div>
+        <div class="sidebar__shortcut-hint" id="sidebar-shortcut-hint">Ctrl+B pour masquer</div>
+      </div>
     </aside>
 
-    <!-- Main content -->
-    <main class="main" id="main">
-      <div class="results-info" id="results-info" style="display:none;"></div>
-      <div id="categories-container"></div>
-      <div class="empty-state" id="empty-state" style="display:none;">
-        <div class="empty-state__icon">🔍</div>
-        <h2>No results found</h2>
-        <p>Try a different search term or browse categories.</p>
-      </div>
-    </main>
+    <!-- Main Workspace Content Area -->
+    <div class="main-wrapper" id="main-wrapper">
+      <main class="main" id="main">
+
+        <!-- Context & Breadcrumbs Bar -->
+        <div class="context-bar" id="context-bar">
+          <div class="context-bar__left">
+            <nav class="breadcrumbs" id="breadcrumbs" aria-label="Fil d'Ariane">
+              <span class="breadcrumb-item" id="breadcrumb-root">Catalogue</span>
+              <span class="breadcrumb-sep">/</span>
+              <span class="breadcrumb-item breadcrumb-item--current" id="breadcrumb-current">Tous les outils</span>
+            </nav>
+            <div class="context-meta">
+              <h1 class="context-title" id="context-title">Tous les outils OSINT</h1>
+              <span class="context-count" id="context-count">947 outils répertoriés</span>
+            </div>
+          </div>
+
+          <div class="context-bar__right">
+            <!-- Sort Selector -->
+            <div class="sort-selector">
+              <label for="sort-select" class="sort-label">Tri :</label>
+              <select id="sort-select" class="sort-select">
+                <option value="default">Ordre thématique</option>
+                <option value="alpha">Alphabétique (A-Z)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Jump Anchors Bar (for category subsections) -->
+        <div class="jump-bar" id="jump-bar" style="display:none;">
+          <span class="jump-bar__label">Sous-sections :</span>
+          <div class="jump-bar__chips" id="jump-bar-chips"></div>
+        </div>
+
+        <!-- Search Status / Filter Ribbon -->
+        <div class="results-info" id="results-info" style="display:none;">
+          <div class="results-info__header">
+            <span id="results-count-text">Recherche</span>
+            <button class="results-clear-btn" id="results-clear-btn">Effacer le filtre (Esc)</button>
+          </div>
+          <div class="results-chips" id="results-chips"></div>
+        </div>
+
+        <!-- Categories & Tools Grid Container -->
+        <div id="categories-container" class="categories-container"></div>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="empty-state" style="display:none;">
+          <div class="empty-state__icon">🔍</div>
+          <h2 id="empty-state-title">Aucun résultat trouvé</h2>
+          <p id="empty-state-desc">Essayez un autre mot-clé ou réinitialisez la recherche pour parcourir l'ensemble des catégories.</p>
+          <button class="empty-state__btn" id="empty-state-btn">Réinitialiser la vue</button>
+        </div>
+
+      </main>
+
+      <!-- Application Footer -->
+      <footer class="footer">
+        <div class="footer__content">
+          <p>
+            <strong class="footer__brand">AAA_OSINT</strong> — Workspace d'investigation en sources ouvertes.
+            Licence <a href="./LICENSE" target="_blank" rel="noopener">CC0 1.0 Universal</a> ·
+            <a href="https://github.com/kalidraco/AAA_OSINT" target="_blank" rel="noopener">Code source GitHub</a>
+          </p>
+          <p class="footer__note">⚠️ La majorité des outils sont des services tiers. Vérifiez toujours la légalité et la sécurité de vos requêtes dans le cadre de vos investigations.</p>
+        </div>
+      </footer>
+    </div>
+
   </div>
 
-  <!-- Footer -->
-  <footer class="footer">
-    <p>
-      <a href="https://github.com/kalidraco/AAA_OSINT" target="_blank" rel="noopener">AAA_OSINT</a> — Licensed under <a href="./LICENSE" target="_blank">CC0 1.0</a>
-    </p>
-    <p class="footer__note">⚠️ Most tools are third-party. Always vet and use responsibly.</p>
-  </footer>
+  <!-- Keyboard Shortcuts Cheat Sheet Modal -->
+  <div class="modal-backdrop" id="shortcuts-modal" aria-hidden="true" style="display:none;">
+    <div class="modal" role="dialog" aria-labelledby="modal-title">
+      <div class="modal__header">
+        <h3 id="modal-title" class="modal__title">Raccourcis clavier & Navigation Desktop</h3>
+        <button class="modal__close" id="shortcuts-modal-close" aria-label="Fermer la fenêtre">✕</button>
+      </div>
+      <div class="modal__body">
+        <table class="shortcuts-table">
+          <thead>
+            <tr>
+              <th>Raccourci</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><kbd class="kbd-badge" id="kbd-shortcut-search">Ctrl+K</kbd> ou <kbd class="kbd-badge">/</kbd></td>
+              <td>Activer et cibler la recherche globale</td>
+            </tr>
+            <tr>
+              <td><kbd class="kbd-badge" id="kbd-shortcut-sidebar">Ctrl+B</kbd></td>
+              <td>Masquer / Déplier la barre latérale</td>
+            </tr>
+            <tr>
+              <td><kbd class="kbd-badge">Échap</kbd></td>
+              <td>Effacer la recherche / Fermer les fenêtres</td>
+            </tr>
+            <tr>
+              <td><kbd class="kbd-badge">↑</kbd> <kbd class="kbd-badge">↓</kbd></td>
+              <td>Naviguer au clavier parmi les cartes d'outils</td>
+            </tr>
+            <tr>
+              <td><kbd class="kbd-badge">Entrée</kbd></td>
+              <td>Ouvrir le lien de l'outil sélectionné</td>
+            </tr>
+            <tr>
+              <td><kbd class="kbd-badge">Double-clic</kbd> (sur la bordure)</td>
+              <td>Réinitialiser la largeur de la barre latérale</td>
+            </tr>
+            <tr>
+              <td><kbd class="kbd-badge">?</kbd></td>
+              <td>Afficher cette aide des raccourcis</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
-  <!-- Back to top -->
-  <button class="back-to-top" id="back-to-top" aria-label="Back to top">↑</button>
+  <!-- Toast Notification -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+  <!-- Back to top floating button -->
+  <button class="back-to-top" id="back-to-top" aria-label="Retour en haut de page" title="Haut de page">↑</button>
+
+  <!-- Script -->
   <script src="app.js"></script>
 </body>
 </html>
