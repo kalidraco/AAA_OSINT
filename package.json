@@ -1,6 +1,6 @@
 {
   "name": "aaa_osint",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "AAA_OSINT — A curated collection of 940+ OSINT tools & resources with an interactive web UI",
   "scripts": {
     "build": "node scripts/build-data.js",

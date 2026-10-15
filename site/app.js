@@ -1,28 +1,28 @@
 /**
- * AAA_OSINT — Front-end Application
+ * AAA_OSINT — Front-end Application (Modernised)
  *
- * Loads data.json and renders a searchable, category-filterable
- * directory of OSINT tools with fuzzy matching and smooth animations.
+ * Loads data.json and renders a searchable, sidebar-navigable
+ * directory of OSINT tools with smooth interactions.
  */
 
 (function () {
   'use strict';
 
   // --- DOM refs ---
-  const searchInput        = document.getElementById('search-input');
-  const searchKbd          = document.getElementById('search-kbd');
-  const searchClear        = document.getElementById('search-clear');
-  const catNavInner        = document.getElementById('cat-nav-inner');
-  const navPrevBtn         = document.getElementById('cat-nav-prev');
-  const navNextBtn         = document.getElementById('cat-nav-next');
-  const catNavEdgeLeft     = document.getElementById('cat-nav-edge-left');
-  const catNavEdgeRight    = document.getElementById('cat-nav-edge-right');
-  const container          = document.getElementById('categories-container');
-  const emptyState         = document.getElementById('empty-state');
-  const resultsInfo        = document.getElementById('results-info');
-  const statTools          = document.getElementById('stat-tools');
-  const statCategories     = document.getElementById('stat-categories');
-  const backToTop          = document.getElementById('back-to-top');
+  const searchInput     = document.getElementById('search-input');
+  const searchKbd       = document.getElementById('search-kbd');
+  const searchClear     = document.getElementById('search-clear');
+  const sidebarNav      = document.getElementById('sidebar-nav');
+  const sidebar         = document.getElementById('sidebar');
+  const sidebarToggle   = document.getElementById('sidebar-toggle');
+  const sidebarCollapse = document.getElementById('sidebar-collapse');
+  const sidebarOverlay  = document.getElementById('sidebar-overlay');
+  const container       = document.getElementById('categories-container');
+  const emptyState      = document.getElementById('empty-state');
+  const resultsInfo     = document.getElementById('results-info');
+  const statTools       = document.getElementById('stat-tools');
+  const statCategories  = document.getElementById('stat-categories');
+  const backToTop       = document.getElementById('back-to-top');
 
   let DATA = null;
   let activeCategory = null;
@@ -63,7 +63,6 @@
     function tick(now) {
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      // ease-out quad
       const eased = 1 - (1 - progress) * (1 - progress);
       el.textContent = Math.round(start + (target - start) * eased);
       if (progress < 1) requestAnimationFrame(tick);
@@ -71,71 +70,106 @@
     requestAnimationFrame(tick);
   }
 
-  // --- Category Nav Scrolling ---
-  function getScrollStep() {
-    return Math.max(220, Math.floor(catNavInner.clientWidth * 0.65));
+  // --- Media query helper ---
+  function isMobile() {
+    return window.matchMedia('(max-width: 768px)').matches;
   }
 
-  function updateNavButtons() {
-    if (!catNavInner) return;
-    const scrollLeft = catNavInner.scrollLeft;
-    const maxScroll = catNavInner.scrollWidth - catNavInner.clientWidth;
-    const canScrollLeft = scrollLeft > 4;
-    const canScrollRight = scrollLeft < maxScroll - 4;
+  // --- Sidebar ---
+  function closeMobileSidebar() {
+    sidebar.classList.remove('is-open');
+    sidebarOverlay.classList.remove('is-visible');
+  }
 
-    if (catNavEdgeLeft) {
-      catNavEdgeLeft.classList.toggle('is-hidden', !canScrollLeft);
+  function openMobileSidebar() {
+    sidebar.classList.add('is-open');
+    sidebarOverlay.classList.add('is-visible');
+  }
+
+  // Toggle button (mobile hamburger)
+  sidebarToggle.addEventListener('click', () => {
+    if (sidebar.classList.contains('is-open')) {
+      closeMobileSidebar();
+    } else {
+      openMobileSidebar();
     }
-    if (catNavEdgeRight) {
-      catNavEdgeRight.classList.toggle('is-hidden', !canScrollRight);
+  });
+
+  // Overlay click closes sidebar
+  sidebarOverlay.addEventListener('click', closeMobileSidebar);
+
+  // Collapse button (desktop)
+  sidebarCollapse.addEventListener('click', () => {
+    document.body.classList.toggle('sidebar-collapsed');
+    // Persist preference
+    try {
+      localStorage.setItem('sidebar-collapsed', document.body.classList.contains('sidebar-collapsed') ? '1' : '0');
+    } catch (e) { /* ignore */ }
+  });
+
+  // Restore sidebar state
+  try {
+    if (localStorage.getItem('sidebar-collapsed') === '1' && !isMobile()) {
+      document.body.classList.add('sidebar-collapsed');
     }
-  }
+  } catch (e) { /* ignore */ }
 
-  function centerChip(chip) {
-    if (!chip || !catNavInner) return;
-    const containerWidth = catNavInner.clientWidth;
-    const chipLeft = chip.offsetLeft;
-    const chipWidth = chip.offsetWidth;
-    const targetScroll = chipLeft - (containerWidth / 2) + (chipWidth / 2);
-    catNavInner.scrollTo({ left: targetScroll, behavior: 'smooth' });
-  }
-
-  // --- Build Category Nav ---
+  // --- Build Sidebar Nav ---
   function buildNav() {
-    const allChip = document.createElement('button');
-    allChip.className = 'cat-chip cat-chip--active';
-    allChip.innerHTML = `All <span class="cat-chip__count">${DATA.totalTools}</span>`;
-    allChip.dataset.slug = '';
-    allChip.addEventListener('click', () => {
-      activeCategory = null;
-      setActiveChip('');
-      centerChip(allChip);
-      render();
-    });
-    catNavInner.appendChild(allChip);
+    sidebarNav.innerHTML = '';
 
+    // "All" item
+    const allItem = document.createElement('button');
+    allItem.className = 'sidebar-item sidebar-item--active';
+    allItem.dataset.slug = '';
+    allItem.dataset.tooltip = `All (${DATA.totalTools})`;
+    allItem.innerHTML = `
+      <span class="sidebar-item__emoji">🌐</span>
+      <span class="sidebar-item__text">All Tools</span>
+      <span class="sidebar-item__count">${DATA.totalTools}</span>
+    `;
+    allItem.addEventListener('click', () => {
+      activeCategory = null;
+      setActiveItem('');
+      render();
+      if (isMobile()) closeMobileSidebar();
+    });
+    sidebarNav.appendChild(allItem);
+
+    // Separator
+    const sep = document.createElement('div');
+    sep.className = 'sidebar-sep';
+    sidebarNav.appendChild(sep);
+
+    // Category items
     for (const cat of DATA.categories) {
-      const chip = document.createElement('button');
-      chip.className = 'cat-chip';
-      chip.innerHTML = `${cat.emoji} ${cat.title} <span class="cat-chip__count">${cat.toolCount}</span>`;
-      chip.dataset.slug = cat.slug;
-      chip.addEventListener('click', () => {
+      const item = document.createElement('button');
+      item.className = 'sidebar-item';
+      item.dataset.slug = cat.slug;
+      item.dataset.tooltip = `${cat.title} (${cat.toolCount})`;
+      item.innerHTML = `
+        <span class="sidebar-item__emoji">${cat.emoji}</span>
+        <span class="sidebar-item__text">${cat.title}</span>
+        <span class="sidebar-item__count">${cat.toolCount}</span>
+      `;
+      item.addEventListener('click', () => {
         activeCategory = cat.slug;
-        setActiveChip(cat.slug);
+        setActiveItem(cat.slug);
         searchInput.value = '';
         searchClear.style.display = 'none';
         searchKbd.style.display = '';
-        centerChip(chip);
         render();
+        if (isMobile()) closeMobileSidebar();
+        // Scroll main to top
         container.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
-      catNavInner.appendChild(chip);
+      sidebarNav.appendChild(item);
     }
   }
 
-  function setActiveChip(slug) {
-    catNavInner.querySelectorAll('.cat-chip').forEach(c => {
-      c.classList.toggle('cat-chip--active', c.dataset.slug === slug);
+  function setActiveItem(slug) {
+    sidebarNav.querySelectorAll('.sidebar-item').forEach(item => {
+      item.classList.toggle('sidebar-item--active', item.dataset.slug === slug);
     });
   }
 
@@ -262,7 +296,7 @@
 
     if (val && activeCategory) {
       activeCategory = null;
-      setActiveChip('');
+      setActiveItem('');
     }
 
     searchTimeout = setTimeout(() => render(), 120);
@@ -291,76 +325,27 @@
         render();
       }
     }
+    // Escape also closes mobile sidebar
+    if (e.key === 'Escape' && sidebar.classList.contains('is-open')) {
+      closeMobileSidebar();
+    }
   });
 
   // --- Back to top ---
   window.addEventListener('scroll', () => {
-    backToTop.classList.toggle('back-to-top--visible', window.scrollY > 400);
+    backToTop.classList.toggle('back-to-top--visible', window.scrollY > 300);
   }, { passive: true });
 
   backToTop.addEventListener('click', () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
-  // --- Category Nav Controls & Drag ---
-  if (navPrevBtn) {
-    navPrevBtn.addEventListener('click', () => {
-      catNavInner.scrollBy({ left: -getScrollStep(), behavior: 'smooth' });
-    });
-  }
-
-  if (navNextBtn) {
-    navNextBtn.addEventListener('click', () => {
-      catNavInner.scrollBy({ left: getScrollStep(), behavior: 'smooth' });
-    });
-  }
-
-  catNavInner.addEventListener('scroll', updateNavButtons, { passive: true });
-  window.addEventListener('resize', updateNavButtons, { passive: true });
-
-  // Smooth drag-to-scroll support for mouse
-  let isDown = false;
-  let startX = 0;
-  let scrollStart = 0;
-  let isDraggingNav = false;
-
-  catNavInner.addEventListener('mousedown', (e) => {
-    if (e.button !== 0) return;
-    isDown = true;
-    isDraggingNav = false;
-    startX = e.pageX - catNavInner.offsetLeft;
-    scrollStart = catNavInner.scrollLeft;
-  });
-
-  window.addEventListener('mousemove', (e) => {
-    if (!isDown) return;
-    const x = e.pageX - catNavInner.offsetLeft;
-    const walk = x - startX;
-    if (Math.abs(walk) > 4) {
-      isDraggingNav = true;
-      catNavInner.classList.add('is-dragging');
+  // --- Handle resize: close mobile sidebar when going to desktop ---
+  window.addEventListener('resize', () => {
+    if (!isMobile() && sidebar.classList.contains('is-open')) {
+      closeMobileSidebar();
     }
-    if (isDraggingNav) {
-      e.preventDefault();
-      catNavInner.scrollLeft = scrollStart - walk;
-    }
-  });
-
-  window.addEventListener('mouseup', () => {
-    if (!isDown) return;
-    isDown = false;
-    catNavInner.classList.remove('is-dragging');
-    setTimeout(() => {
-      isDraggingNav = false;
-    }, 50);
-  });
-
-  catNavInner.addEventListener('click', (e) => {
-    if (isDraggingNav) {
-      e.stopPropagation();
-      e.preventDefault();
-    }
-  }, true);
+  }, { passive: true });
 
   // --- Init ---
   async function init() {
@@ -384,8 +369,6 @@
 
     buildNav();
     render();
-    requestAnimationFrame(updateNavButtons);
-    setTimeout(updateNavButtons, 100);
   }
 
   init();

@@ -15,62 +15,68 @@
   <div class="bg-grid"></div>
   <div class="bg-glow bg-glow--1"></div>
   <div class="bg-glow bg-glow--2"></div>
-  <div class="bg-glow bg-glow--3"></div>
 
-  <!-- Header / Hero -->
-  <header class="hero" id="hero">
-    <div class="hero__badge">OPEN SOURCE INTELLIGENCE</div>
-    <h1 class="hero__title">
-      <span class="hero__title-icon">🛰</span>
-      AAA_<span class="hero__accent">OSINT</span>
-    </h1>
-    <p class="hero__subtitle">
-      A curated collection of <strong id="stat-tools">—</strong> tools & resources across <strong id="stat-categories">—</strong> categories.
-    </p>
-    <div class="hero__search-wrap">
-      <div class="search-box" id="search-box">
-        <svg class="search-box__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" id="search-input" class="search-box__input" placeholder="Search tools, categories, or descriptions…" autocomplete="off">
-        <kbd class="search-box__kbd" id="search-kbd">/</kbd>
-        <button class="search-box__clear" id="search-clear" aria-label="Clear search" style="display:none;">✕</button>
+  <!-- Mobile overlay -->
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <!-- Top bar -->
+  <header class="topbar" id="topbar">
+    <div class="topbar__left">
+      <button class="topbar__menu-btn" id="sidebar-toggle" aria-label="Toggle navigation">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+      <div class="topbar__brand">
+        <span class="topbar__icon">🛰</span>
+        <span class="topbar__title">AAA_<span class="topbar__accent">OSINT</span></span>
       </div>
     </div>
-    <div class="hero__stats" id="hero-stats"></div>
+    <div class="topbar__search" id="search-box">
+      <svg class="topbar__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="search-input" class="topbar__search-input" placeholder="Search tools, categories…" autocomplete="off">
+      <kbd class="topbar__kbd" id="search-kbd">/</kbd>
+      <button class="topbar__search-clear" id="search-clear" aria-label="Clear search" style="display:none;">✕</button>
+    </div>
+    <div class="topbar__stats">
+      <span class="topbar__stat"><strong id="stat-tools">—</strong> tools</span>
+      <span class="topbar__stat-sep">·</span>
+      <span class="topbar__stat"><strong id="stat-categories">—</strong> categories</span>
+    </div>
   </header>
 
-  <!-- Category nav chips with side navigation buttons -->
-  <nav class="cat-nav" id="cat-nav" aria-label="Category navigation">
-    <div class="cat-nav__wrapper">
-      <div class="cat-nav__edge cat-nav__edge--left is-hidden" id="cat-nav-edge-left">
-        <button class="cat-nav__btn cat-nav__btn--prev" id="cat-nav-prev" aria-label="Scroll categories left" title="Scroll left">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="15 18 9 12 15 6"></polyline>
+  <!-- Layout wrapper -->
+  <div class="layout" id="layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar__header">
+        <span class="sidebar__label">Categories</span>
+        <button class="sidebar__collapse-btn" id="sidebar-collapse" aria-label="Collapse sidebar" title="Collapse sidebar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="11 17 6 12 11 7"></polyline>
+            <polyline points="18 17 13 12 18 7"></polyline>
           </svg>
         </button>
       </div>
+      <nav class="sidebar__nav" id="sidebar-nav" aria-label="Category navigation">
+        <!-- "All" item + category items injected by JS -->
+      </nav>
+    </aside>
 
-      <div class="cat-nav__inner" id="cat-nav-inner"></div>
-
-      <div class="cat-nav__edge cat-nav__edge--right" id="cat-nav-edge-right">
-        <button class="cat-nav__btn cat-nav__btn--next" id="cat-nav-next" aria-label="Scroll categories right" title="Scroll right">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="9 18 15 12 9 6"></polyline>
-          </svg>
-        </button>
+    <!-- Main content -->
+    <main class="main" id="main">
+      <div class="results-info" id="results-info" style="display:none;"></div>
+      <div id="categories-container"></div>
+      <div class="empty-state" id="empty-state" style="display:none;">
+        <div class="empty-state__icon">🔍</div>
+        <h2>No results found</h2>
+        <p>Try a different search term or browse categories.</p>
       </div>
-    </div>
-  </nav>
-
-  <!-- Main content -->
-  <main class="main" id="main">
-    <div class="results-info" id="results-info" style="display:none;"></div>
-    <div id="categories-container"></div>
-    <div class="empty-state" id="empty-state" style="display:none;">
-      <div class="empty-state__icon">🔍</div>
-      <h2>No results found</h2>
-      <p>Try a different search term or browse categories above.</p>
-    </div>
-  </main>
+    </main>
+  </div>
 
   <!-- Footer -->
   <footer class="footer">

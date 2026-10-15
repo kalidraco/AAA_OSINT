@@ -45,12 +45,15 @@ http://localhost:3000
 
 ## ✨ Web App Features
 
-- 🔍 **Real-Time Instant Search:** Fuzzy search across tool names, descriptions, and domains (press <kbd>/</kbd> to focus, <kbd>Esc</kbd> to clear).
-- 🏷️ **Category Filter Chips:** 25 interactive category chips in a sticky navigation bar with live tool count indicators.
+- 🗂 **Sidebar Navigation:** Collapsible sidebar with all 25 categories, emoji icons, and live tool counts — replaces the former horizontal chip bar for faster access and better readability.
+- 🔍 **Always-On Search:** Instant search across tool names, descriptions, and domains, accessible from the persistent top bar (press <kbd>/</kbd> to focus, <kbd>Esc</kbd> to clear).
+- 📌 **Compact Top Bar:** Brand, search, and global stats always visible — no large hero section in the way.
 - 🌐 **Automatic Favicon Resolution:** Auto-fetches official platform favicons for rapid visual identification.
-- 🎨 **Deep-Space Dark Aesthetic:** High-contrast, clean typography (`Inter` + `JetBrains Mono`) with subtle ambient glowing backdrops.
-- 📱 **Fully Responsive:** Adapts seamlessly from mobile screens to ultra-wide desktop monitors.
+- 🎨 **Deep-Space Dark Aesthetic:** High-contrast dark theme with cyan accents, clean typography (`Inter` + `JetBrains Mono`), and subtle ambient effects.
+- 📱 **Fully Responsive:** Desktop sidebar collapses with tooltips; mobile uses a slide-in drawer with overlay.
+- 💾 **Persistent Preferences:** Sidebar collapsed/expanded state is remembered across sessions via `localStorage`.
 - ⚡ **Zero External Backend Required:** Pure static HTML/CSS/JS frontend powered by an auto-generated JSON catalog.
+- ♿ **Keyboard & Focus Support:** All interactive elements have visible focus states and proper ARIA labels.
 
 ---
 
@@ -68,9 +71,9 @@ AAA_OSINT/
 ├── scripts/
 │   └── build-data.js         # Node.js script that parses docs/ into site/data.json
 ├── site/                     # Web application source files
-│   ├── index.html            # Main dashboard HTML
-│   ├── style.css             # Design system & styles
-│   ├── app.js                # Search, filtering, and animation logic
+│   ├── index.html            # Main dashboard HTML (topbar + sidebar + content layout)
+│   ├── style.css             # Design system & styles (sidebar, topbar, responsive)
+│   ├── app.js                # Search, sidebar navigation, and rendering logic
 │   ├── data.json             # Structured JSON dataset (947 tools)
 │   └── favicon.svg           # Site favicon
 ├── package.json              # NPM scripts & project configuration

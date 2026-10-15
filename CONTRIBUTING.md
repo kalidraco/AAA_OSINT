@@ -1,4 +1,4 @@
-# Contributing to Legendary_OSINT
+# Contributing to AAA_OSINT
 
 Thanks for your interest in contributing! 🎉  
 This project is a curated knowledge base of OSINT tools and resources. To keep it consistent and useful for everyone, please follow these guidelines.
