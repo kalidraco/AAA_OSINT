@@ -1,49 +1,69 @@
 /**
  * AAA_OSINT — Senior Professional Desktop Application Core
  * Architecture: Investigation Workspace & OSINT Command Center
- * Features: Resizable & Collapsible Sidebar, Omnisearch, Domain Hierarchy,
- *           Favorites, Recent History, Density Switcher, Keyboard Navigation.
+ * Features:
+ *   - Bilingual Internationalization (FR / EN) with on-the-fly switching
+ *   - Dedicated "Sans inscription" (No Registration) Section & Sub-filters
+ *   - Access Status Badging & Classification across all cards
+ *   - Resizable & Collapsible Sidebar, Omnisearch with Bilingual Matching
+ *   - Operational Domain Hierarchy, Favorites, Recent History
+ *   - Density Switcher, Keyboard Navigation & IntelX Integration.
  */
 
 (function () {
   'use strict';
 
-  // --- Operational Domains Taxonomy (25 Categories Grouped Logically) ---
-  const DOMAINS = [
+  // --- Platform Detection ---
+  const isMac = /(Mac|iPhone|iPod|iPad)/i.test(navigator.platform || navigator.userAgent || '');
+  const modKey = isMac ? '⌘' : 'Ctrl';
+
+  // --- Fallback Domains Taxonomy (overridden by i18n.DOMAINS if loaded) ---
+  const DEFAULT_DOMAINS = [
     {
       id: 'identity',
       title: 'Identité & Personnes',
+      title_fr: 'Identité & Personnes',
+      title_en: 'Identity & People',
       slugs: ['people-social', 'phishing-email', 'image-reverse', 'video-osint']
     },
     {
       id: 'cyber',
       title: 'Cyber & Infrastructure',
+      title_fr: 'Cyber & Infrastructure',
+      title_en: 'Cyber & Infrastructure',
       slugs: ['infra-domains', 'darkweb-leaks', 'malware-cti', 'automation-recon', 'comms']
     },
     {
       id: 'geoint',
       title: 'Géospatial & Transports',
+      title_fr: 'Géospatial & Transports',
+      title_en: 'Geospatial & Transportation',
       slugs: ['geospatial-mapping', 'aviation', 'maritime', 'railways']
     },
     {
       id: 'intel',
       title: 'Renseignement & Enquête',
+      title_fr: 'Renseignement & Enquête',
+      title_en: 'Intelligence & Investigation',
       slugs: ['intel-feeds', 'news-media', 'business-intel', 'gov-legal', 'document-file', 'ai-osint']
     },
     {
       id: 'resources',
       title: 'Ressources & Archivage',
+      title_fr: 'Ressources & Archivage',
+      title_en: 'Resources & Archiving',
       slugs: ['search-engines', 'archiving-caching', 'academic', 'reporting-visualization', 'learning', 'osint-for-good']
     }
   ];
 
-  // --- Platform Detection ---
-  const isMac = /(Mac|iPhone|iPod|iPad)/i.test(navigator.platform || navigator.userAgent || '');
-  const modKey = isMac ? '⌘' : 'Ctrl';
+  // Helper accessor for i18n safe calls
+  const t = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
+  const getDOMAINS = () => (window.i18n && window.i18n.DOMAINS) || DEFAULT_DOMAINS;
 
   // --- State ---
   let DATA = null;
-  let activeView = 'all'; // 'all' | 'favorites' | 'recent' | 'intelx' | [category slug]
+  let activeView = 'all'; // 'all' | 'no-registration' | 'favorites' | 'recent' | 'intelx' | [category slug]
+  let noRegSubFilter = 'all'; // 'all' | 'no_account' | 'optional_account' | 'limited_access'
   let searchQuery = '';
   let activeSearchCategoryFilter = null; // slug or null
   let sortMode = 'default'; // 'default' | 'alpha'
@@ -73,6 +93,11 @@
   const brandHome         = document.getElementById('brand-home');
   const statTools         = document.getElementById('stat-tools');
   const statCategories    = document.getElementById('stat-categories');
+  const labelStatTools    = document.getElementById('label-stat-tools');
+  const labelStatCats     = document.getElementById('label-stat-categories');
+
+  const langBtnFr         = document.getElementById('lang-btn-fr');
+  const langBtnEn         = document.getElementById('lang-btn-en');
 
   const sidebar           = document.getElementById('sidebar');
   const sidebarNav        = document.getElementById('sidebar-nav');
@@ -80,12 +105,19 @@
   const sidebarCollapse   = document.getElementById('sidebar-collapse');
   const sidebarOverlay    = document.getElementById('sidebar-overlay');
   const sidebarResizer    = document.getElementById('sidebar-resizer');
+  const sidebarHubLabel   = document.getElementById('sidebar-hub-label');
   const categoryFilterIn  = document.getElementById('category-filter-input');
   const categoryFilterClr = document.getElementById('category-filter-clear');
   const countAll          = document.getElementById('count-all');
+  const countNoReg        = document.getElementById('count-no-registration');
   const countFavorites    = document.getElementById('count-favorites');
   const countRecent       = document.getElementById('count-recent');
   const sidebarShortcutH  = document.getElementById('sidebar-shortcut-hint');
+
+  const labelNavAll       = document.getElementById('label-nav-all');
+  const labelNavNoReg     = document.getElementById('label-nav-no-reg');
+  const labelNavFavorites = document.getElementById('label-nav-favorites');
+  const labelNavRecent    = document.getElementById('label-nav-recent');
 
   const mainWrapper       = document.getElementById('main-wrapper');
   const contextBar        = document.getElementById('context-bar');
@@ -174,7 +206,7 @@
   }
 
   function animateCount(el, target, duration = 600) {
-    if (!el) return;
+    if (!el || !target) return;
     const start = 0;
     const startTime = performance.now();
     function tick(now) {
@@ -190,13 +222,112 @@
   // --- Setup Platform UI ---
   function setupPlatformHints() {
     if (searchKbd) searchKbd.textContent = `${modKey}+K`;
-    if (sidebarShortcutH) sidebarShortcutH.textContent = `${modKey}+B pour basculer`;
-    if (sidebarCollapse) sidebarCollapse.setAttribute('title', `Basculer la barre latérale (${modKey}+B)`);
+    const isEn = window.i18n && window.i18n.getLang() === 'en';
+    if (sidebarShortcutH) {
+      sidebarShortcutH.textContent = isEn ? `${modKey}+B to toggle` : `${modKey}+B pour basculer`;
+    }
+    if (sidebarCollapse) {
+      sidebarCollapse.setAttribute('title', isEn ? `Toggle sidebar (${modKey}+B)` : `Basculer la barre latérale (${modKey}+B)`);
+    }
 
     const kbdSearch = document.getElementById('kbd-shortcut-search');
     const kbdSidebar = document.getElementById('kbd-shortcut-sidebar');
     if (kbdSearch) kbdSearch.textContent = `${modKey}+K`;
     if (kbdSidebar) kbdSidebar.textContent = `${modKey}+B`;
+  }
+
+  // --- Internationalization UI Synchronizer ---
+  function updateLanguageUI() {
+    const currentLang = window.i18n ? window.i18n.getLang() : 'fr';
+    const isEn = currentLang === 'en';
+
+    // HTML lang attribute
+    document.documentElement.lang = currentLang;
+
+    // Document title
+    document.title = t('app_title');
+
+    // Language switcher buttons state
+    if (langBtnFr) langBtnFr.classList.toggle('is-active', !isEn);
+    if (langBtnEn) langBtnEn.classList.toggle('is-active', isEn);
+
+    // Header buttons & placeholders
+    if (searchInput) searchInput.placeholder = t('search_placeholder');
+    if (categoryFilterIn) categoryFilterIn.placeholder = t('filter_categories_placeholder');
+    if (labelStatTools) labelStatTools.textContent = t('tools_count_label');
+    if (labelStatCats) labelStatCats.textContent = t('categories_count_label');
+    if (densityToggle) densityToggle.title = t('density_toggle_title');
+    if (shortcutsToggle) shortcutsToggle.title = t('shortcuts_toggle_title');
+
+    // Sidebar labels
+    if (sidebarHubLabel) sidebarHubLabel.textContent = t('workspace');
+    if (labelNavAll) labelNavAll.textContent = t('all_tools');
+    if (labelNavNoReg) labelNavNoReg.textContent = t('no_registration');
+    if (labelNavFavorites) labelNavFavorites.textContent = t('favorites');
+    if (labelNavRecent) labelNavRecent.textContent = t('recent');
+    const footerTextEl = document.querySelector('.sidebar__footer-text');
+    if (footerTextEl) footerTextEl.textContent = t('active_platform_hint');
+
+    // Sort selector options
+    const sortLabel = document.querySelector('.sort-label');
+    if (sortLabel) sortLabel.textContent = t('sort_label');
+    const optDefault = sortSelect ? sortSelect.querySelector('option[value="default"]') : null;
+    const optAlpha = sortSelect ? sortSelect.querySelector('option[value="alpha"]') : null;
+    if (optDefault) optDefault.textContent = t('sort_default');
+    if (optAlpha) optAlpha.textContent = t('sort_alpha');
+
+    // Jump Bar label
+    const jumpLabel = document.querySelector('.jump-bar__label');
+    if (jumpLabel) jumpLabel.textContent = t('subsections_label');
+
+    // Search bar clear
+    if (resultsClearBtn) resultsClearBtn.textContent = t('clear_filter_btn');
+
+    // Empty state button
+    if (emptyStateBtn) emptyStateBtn.textContent = t('reset_view_btn');
+
+    // Shortcuts modal strings
+    const modalTitle = document.getElementById('modal-title');
+    if (modalTitle) modalTitle.textContent = t('shortcuts_modal_title');
+    const thShortcut = document.getElementById('th-shortcut');
+    const thAction = document.getElementById('th-action');
+    if (thShortcut) thShortcut.textContent = t('shortcut_col_shortcut');
+    if (thAction) thAction.textContent = t('shortcut_col_action');
+    const rowSearch = document.getElementById('row-shortcut-search');
+    const rowSidebar = document.getElementById('row-shortcut-sidebar');
+    const rowEsc = document.getElementById('row-shortcut-esc');
+    const rowNav = document.getElementById('row-shortcut-nav');
+    const rowEnter = document.getElementById('row-shortcut-enter');
+    const rowResize = document.getElementById('row-shortcut-resize');
+    const rowHelp = document.getElementById('row-shortcut-help');
+    const labelOrSlash = document.getElementById('label-or-slash');
+    const labelBorderHint = document.getElementById('label-border-hint');
+
+    if (rowSearch) rowSearch.textContent = t('shortcut_search_desc');
+    if (rowSidebar) rowSidebar.textContent = t('shortcut_sidebar_desc');
+    if (rowEsc) rowEsc.textContent = t('shortcut_esc_desc');
+    if (rowNav) rowNav.textContent = t('shortcut_nav_desc');
+    if (rowEnter) rowEnter.textContent = t('shortcut_enter_desc');
+    if (rowResize) rowResize.textContent = t('shortcut_resize_desc');
+    if (rowHelp) rowHelp.textContent = t('shortcut_help_desc');
+    if (labelOrSlash) labelOrSlash.textContent = isEn ? 'or' : 'ou';
+    if (labelBorderHint) labelBorderHint.textContent = isEn ? '(on the border)' : '(sur la bordure)';
+
+    // Footer strings
+    const footerBrandDesc = document.getElementById('footer-brand-desc');
+    const footerLicenseText = document.getElementById('footer-license-text');
+    const footerGithubLink = document.getElementById('footer-github-link');
+    const footerNote = document.getElementById('footer-note');
+    if (footerBrandDesc) footerBrandDesc.textContent = t('footer_brand');
+    if (footerLicenseText) footerLicenseText.textContent = isEn ? 'License' : 'Licence';
+    if (footerGithubLink) footerGithubLink.textContent = t('footer_github');
+    if (footerNote) footerNote.textContent = t('footer_disclaimer');
+
+    // Back to top button
+    if (backToTop) backToTop.title = t('back_to_top');
+
+    // Refresh platform hints (Ctrl vs Cmd + translated strings)
+    setupPlatformHints();
   }
 
   // --- Setup Density ---
@@ -251,7 +382,7 @@
     // Double-click to reset default width
     sidebarResizer.addEventListener('dblclick', () => {
       setSidebarWidth(280);
-      showToast('Largeur de navigation réinitialisée (280px)');
+      showToast(t('toast_sidebar_reset'));
     });
   }
 
@@ -278,10 +409,10 @@
     const url = tool.url;
     if (favorites.has(url)) {
       favorites.delete(url);
-      showToast(`Retiré des favoris : ${tool.name}`);
+      showToast(t('toast_fav_removed', { name: tool.name }));
     } else {
       favorites.add(url);
-      showToast(`Ajouté aux favoris : ${tool.name}`);
+      showToast(t('toast_fav_added', { name: tool.name }));
     }
     saveJSON('aaa_favorites', Array.from(favorites));
     updateSidebarCounts();
@@ -293,7 +424,7 @@
       // Update star button visuals on the current view
       document.querySelectorAll(`.tool-card__btn--star[data-url="${CSS.escape(url)}"]`).forEach(btn => {
         btn.classList.toggle('is-starred', favorites.has(url));
-        btn.setAttribute('title', favorites.has(url) ? 'Retirer des favoris' : 'Ajouter aux favoris');
+        btn.setAttribute('title', favorites.has(url) ? t('fav_remove_title') : t('fav_add_title'));
       });
     }
   }
@@ -306,6 +437,11 @@
       name: tool.name,
       url: tool.url,
       description: tool.description,
+      description_fr: tool.description_fr || '',
+      description_en: tool.description_en || '',
+      access: tool.access || 'to_verify',
+      access_details_fr: tool.access_details_fr || '',
+      access_details_en: tool.access_details_en || '',
       categoryTitle: tool._categoryTitle || '',
       categorySlug: tool._categorySlug || '',
       timestamp: Date.now()
@@ -321,14 +457,33 @@
       event.stopPropagation();
     }
     navigator.clipboard.writeText(url).then(() => {
-      showToast('Lien copié dans le presse-papier !');
+      showToast(t('toast_copy_success'));
     }).catch(() => {
-      showToast('Impossible de copier le lien.');
+      showToast(t('toast_copy_fail'));
     });
   }
 
   function updateSidebarCounts() {
-    if (countAll && DATA) countAll.textContent = DATA.totalTools;
+    if (countAll && DATA) countAll.textContent = DATA.totalTools || 947;
+    if (countNoReg) {
+      let count = (DATA && DATA.noRegistrationCount) ? DATA.noRegistrationCount : 0;
+      if (!count && DATA && Array.isArray(DATA.categories)) {
+        DATA.categories.forEach(c => {
+          if (Array.isArray(c.groups)) {
+            c.groups.forEach(g => {
+              if (Array.isArray(g.tools)) {
+                g.tools.forEach(t => {
+                  if (['no_account', 'optional_account', 'limited_access'].includes(t.access)) {
+                    count++;
+                  }
+                });
+              }
+            });
+          }
+        });
+      }
+      countNoReg.textContent = count || 501;
+    }
     if (countFavorites) countFavorites.textContent = favorites.size;
     if (countRecent) countRecent.textContent = recentTools.length;
   }
@@ -337,16 +492,23 @@
   function buildSidebarNav() {
     sidebarNav.innerHTML = '';
     const filterQuery = (categoryFilterIn.value || '').trim().toLowerCase();
+    const domains = getDOMAINS();
 
     // Loop through each operational domain
-    for (const domain of DOMAINS) {
+    for (const domain of domains) {
+      const domainTitle = window.i18n ? window.i18n.getDomainTitle(domain) : domain.title;
+
       // Find matching categories in DATA for this domain
       const domainCategories = DATA.categories.filter(c => domain.slugs.includes(c.slug));
       if (domainCategories.length === 0) continue;
 
-      // Filter categories if user typed in sidebar search
+      // Filter categories if user typed in sidebar search (matches in either FR or EN)
       const visibleCategories = filterQuery
-        ? domainCategories.filter(c => c.title.toLowerCase().includes(filterQuery))
+        ? domainCategories.filter(c => {
+            const titleFr = (c.title_fr || c.title || '').toLowerCase();
+            const titleEn = (c.title_en || c.title || '').toLowerCase();
+            return titleFr.includes(filterQuery) || titleEn.includes(filterQuery);
+          })
         : domainCategories;
 
       if (filterQuery && visibleCategories.length === 0) continue;
@@ -366,7 +528,7 @@
           <svg class="sidebar-domain__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
-          <span class="sidebar-domain__title">${escapeHtml(domain.title)}</span>
+          <span class="sidebar-domain__title">${escapeHtml(domainTitle)}</span>
         </div>
         <span class="sidebar-domain__count">${domainTotalTools}</span>
       `;
@@ -390,13 +552,14 @@
       list.className = 'sidebar-domain__list';
 
       for (const cat of visibleCategories) {
+        const catTitle = window.i18n ? window.i18n.getCategoryTitle(cat) : cat.title;
         const item = document.createElement('button');
         item.className = `sidebar-item ${activeView === cat.slug ? 'sidebar-item--active' : ''}`;
         item.dataset.slug = cat.slug;
-        item.dataset.tooltip = `${cat.title} (${cat.toolCount})`;
+        item.dataset.tooltip = `${catTitle} (${cat.toolCount})`;
         item.innerHTML = `
           <span class="sidebar-item__icon">${cat.emoji}</span>
-          <span class="sidebar-item__text">${highlightText(cat.title, filterQuery)}</span>
+          <span class="sidebar-item__text">${highlightText(catTitle, filterQuery)}</span>
           <span class="sidebar-item__count">${cat.toolCount}</span>
         `;
 
@@ -484,33 +647,39 @@
       return;
     }
 
-    // 1. Favorites View
+    // 1. Dedicated "Sans Inscription" View
+    if (activeView === 'no-registration' && !searchQuery) {
+      renderNoRegistrationView();
+      return;
+    }
+
+    // 2. Favorites View
     if (activeView === 'favorites' && !searchQuery) {
       renderFavoritesView();
       return;
     }
 
-    // 2. Recent Tools View
+    // 3. Recent Tools View
     if (activeView === 'recent' && !searchQuery) {
       renderRecentView();
       return;
     }
 
-    // 3. Search Mode (Global or Filtered)
+    // 4. Search Mode (Global or Filtered, Bilingual)
     if (searchQuery) {
       renderSearchView();
       return;
     }
 
-    // 4. Specific Category or All Tools View
+    // 5. Specific Category or All Tools View
     renderStandardView();
   }
 
   function updateContextBar() {
     if (searchQuery) {
-      breadcrumbRoot.textContent = 'Recherche';
+      breadcrumbRoot.textContent = t('search_results_title');
       breadcrumbCurrent.textContent = `« ${searchQuery} »`;
-      contextTitle.textContent = 'Résultats de recherche';
+      contextTitle.textContent = t('search_results_title');
       resultsInfo.style.display = '';
       return;
     }
@@ -518,35 +687,205 @@
     resultsInfo.style.display = 'none';
 
     if (activeView === 'all') {
-      breadcrumbRoot.textContent = 'Espace de travail';
-      breadcrumbCurrent.textContent = 'Tous les outils';
-      contextTitle.textContent = 'Catalogue général OSINT';
-      contextCount.textContent = `${DATA.totalTools} outils · 25 catégories`;
+      breadcrumbRoot.textContent = t('workspace');
+      breadcrumbCurrent.textContent = t('all_tools');
+      contextTitle.textContent = t('all_tools_title');
+      contextCount.textContent = t('all_tools_count', {
+        tools: DATA.totalTools,
+        categories: DATA.totalCategories
+      });
+    } else if (activeView === 'no-registration') {
+      breadcrumbRoot.textContent = t('workspace');
+      breadcrumbCurrent.textContent = t('no_registration');
+      contextTitle.textContent = `🔓 ${t('no_reg_title')}`;
+      const noRegCount = DATA.noRegistrationCount || 501;
+      contextCount.textContent = t('no_reg_count', { count: noRegCount });
     } else if (activeView === 'intelx') {
-      breadcrumbRoot.textContent = 'Espace de travail';
-      breadcrumbCurrent.textContent = 'Intelligence X';
-      contextTitle.textContent = '⚡ Module d\'Investigation Intelligence X';
-      contextCount.textContent = 'Archives & Leaks connectées';
+      breadcrumbRoot.textContent = t('workspace');
+      breadcrumbCurrent.textContent = t('intelx_module');
+      contextTitle.textContent = t('intelx_view_title');
+      contextCount.textContent = t('intelx_view_count');
     } else if (activeView === 'favorites') {
-      breadcrumbRoot.textContent = 'Espace de travail';
-      breadcrumbCurrent.textContent = 'Favoris';
-      contextTitle.textContent = 'Outils favoris enregistrés';
-      contextCount.textContent = `${favorites.size} outil${favorites.size > 1 ? 's' : ''}`;
+      breadcrumbRoot.textContent = t('workspace');
+      breadcrumbCurrent.textContent = t('favorites');
+      contextTitle.textContent = t('favorites_title');
+      contextCount.textContent = t('favorites_count', {
+        count: favorites.size,
+        s: favorites.size > 1 ? 's' : ''
+      });
     } else if (activeView === 'recent') {
-      breadcrumbRoot.textContent = 'Espace de travail';
-      breadcrumbCurrent.textContent = 'Historique';
-      contextTitle.textContent = 'Outils récemment consultés';
-      contextCount.textContent = `${recentTools.length} outil${recentTools.length > 1 ? 's' : ''}`;
+      breadcrumbRoot.textContent = t('workspace');
+      breadcrumbCurrent.textContent = t('recent');
+      contextTitle.textContent = t('recent_title');
+      contextCount.textContent = t('recent_count', {
+        count: recentTools.length,
+        s: recentTools.length > 1 ? 's' : ''
+      });
     } else {
       const cat = DATA.categories.find(c => c.slug === activeView);
       if (cat) {
-        // Find domain title
-        const domain = DOMAINS.find(d => d.slugs.includes(cat.slug));
-        breadcrumbRoot.textContent = domain ? domain.title : 'Catalogue';
-        breadcrumbCurrent.textContent = cat.title;
-        contextTitle.textContent = `${cat.emoji} ${cat.title}`;
-        contextCount.textContent = `${cat.toolCount} outil${cat.toolCount > 1 ? 's' : ''}`;
+        const domain = getDOMAINS().find(d => d.slugs.includes(cat.slug));
+        breadcrumbRoot.textContent = domain
+          ? (window.i18n ? window.i18n.getDomainTitle(domain) : domain.title)
+          : t('catalog_root');
+        const catTitle = window.i18n ? window.i18n.getCategoryTitle(cat) : cat.title;
+        breadcrumbCurrent.textContent = catTitle;
+        contextTitle.textContent = `${cat.emoji} ${catTitle}`;
+        contextCount.textContent = `${cat.toolCount} ${cat.toolCount > 1 ? t('tools_label') : t('tool_label')}`;
       }
+    }
+  }
+
+  // --- Dedicated "Sans Inscription" (No Registration) Section ---
+  function renderNoRegistrationView() {
+    // 1. Gather all tools without mandatory registration from existing catalog
+    // Statuses allowed: no_account, optional_account, limited_access
+    const NO_REG_STATUSES = ['no_account', 'optional_account', 'limited_access'];
+
+    let countNoAccount = 0;
+    let countOptional = 0;
+    let countLimited = 0;
+
+    DATA.categories.forEach(cat => {
+      cat.groups.forEach(group => {
+        group.tools.forEach(tool => {
+          if (tool.access === 'no_account') countNoAccount++;
+          else if (tool.access === 'optional_account') countOptional++;
+          else if (tool.access === 'limited_access') countLimited++;
+        });
+      });
+    });
+
+    const totalNoReg = countNoAccount + countOptional + countLimited;
+
+    // Header Banner
+    const banner = document.createElement('div');
+    banner.className = 'no-reg-header-banner';
+    banner.innerHTML = `
+      <div class="no-reg-header-banner__top">
+        <div class="no-reg-header-banner__icon">🔓</div>
+        <div>
+          <h2 class="no-reg-header-banner__title">${escapeHtml(t('no_reg_title'))}</h2>
+          <p class="no-reg-header-banner__desc">${escapeHtml(t('no_reg_desc'))}</p>
+        </div>
+      </div>
+      <div class="no-reg-chips" id="no-reg-chips"></div>
+    `;
+
+    // Filter Chips: All, No Account, Optional Account, Limited Access
+    const chipsContainer = banner.querySelector('#no-reg-chips');
+    const filterTabs = [
+      { id: 'all', label: t('no_reg_tab_all', { count: totalNoReg }) },
+      { id: 'no_account', label: t('no_reg_tab_no_account', { count: countNoAccount }) },
+      { id: 'optional_account', label: t('no_reg_tab_optional', { count: countOptional }) },
+      { id: 'limited_access', label: t('no_reg_tab_limited', { count: countLimited }) }
+    ];
+
+    filterTabs.forEach(tab => {
+      const chip = document.createElement('button');
+      chip.className = `no-reg-chip ${noRegSubFilter === tab.id ? 'is-active' : ''}`;
+      chip.textContent = tab.label;
+      chip.addEventListener('click', () => {
+        noRegSubFilter = tab.id;
+        render();
+      });
+      chipsContainer.appendChild(chip);
+    });
+
+    container.appendChild(banner);
+
+    // Filter and group tools across categories
+    let totalToolsRendered = 0;
+
+    for (const cat of DATA.categories) {
+      const matchingGroups = [];
+
+      for (const group of cat.groups) {
+        const matchingTools = group.tools.filter(tool => {
+          if (noRegSubFilter === 'all') {
+            return NO_REG_STATUSES.includes(tool.access);
+          }
+          return tool.access === noRegSubFilter;
+        });
+
+        if (matchingTools.length > 0) {
+          matchingGroups.push({
+            name: group.name,
+            name_fr: group.name_fr,
+            name_en: group.name_en,
+            tools: matchingTools
+          });
+        }
+      }
+
+      if (matchingGroups.length === 0) continue;
+
+      const catTitle = window.i18n ? window.i18n.getCategoryTitle(cat) : cat.title;
+      const catCount = matchingGroups.reduce((s, g) => s + g.tools.length, 0);
+
+      const section = document.createElement('section');
+      section.className = 'category-section';
+      section.id = `cat-${cat.slug}`;
+
+      const header = document.createElement('div');
+      header.className = 'category-header';
+      header.innerHTML = `
+        <div class="category-header__emoji">${cat.emoji}</div>
+        <h2 class="category-header__title">${escapeHtml(catTitle)}</h2>
+        <span class="category-header__count">${catCount} ${catCount > 1 ? t('tools_label') : t('tool_label')}</span>
+      `;
+      section.appendChild(header);
+
+      for (const group of matchingGroups) {
+        let tools = [...group.tools];
+        if (sortMode === 'alpha') {
+          tools.sort((a, b) => a.name.localeCompare(b.name));
+        }
+
+        const groupName = window.i18n ? window.i18n.getGroupName(group) : group.name;
+
+        const groupEl = document.createElement('div');
+        groupEl.className = 'group';
+        groupEl.innerHTML = `
+          <div class="group__header">
+            <h3 class="group__name">${escapeHtml(groupName)}</h3>
+            <span class="group__count">${tools.length}</span>
+          </div>
+        `;
+
+        const grid = document.createElement('div');
+        grid.className = 'tools-grid';
+
+        for (const tool of tools) {
+          tool._categoryTitle = catTitle;
+          tool._categorySlug = cat.slug;
+          grid.appendChild(createToolCard(tool, catTitle, true));
+          totalToolsRendered++;
+        }
+
+        groupEl.appendChild(grid);
+        section.appendChild(groupEl);
+      }
+
+      container.appendChild(section);
+    }
+
+    if (totalToolsRendered === 0) {
+      emptyState.style.display = '';
+      const isEn = window.i18n && window.i18n.getLang() === 'en';
+      emptyStateTitle.textContent = isEn
+        ? 'No confirmed registration-free tools for this filter'
+        : 'Aucun outil sans inscription confirmé pour ce filtre';
+      emptyStateDesc.textContent = isEn
+        ? 'Only tools whose registration-free access terms have been formally verified are listed here. Services with unconfirmed requirements remain under "To verify" to avoid misclassification.'
+        : 'Seuls les outils dont les conditions d\'accès sans compte sont formellement vérifiées sont répertoriés ici. Les services incertains sont conservés sous « À vérifier » pour garantir une classification fiable.';
+      emptyStateBtn.textContent = isEn ? 'Show all registration-free tools' : 'Afficher tous les outils sans inscription';
+      emptyStateBtn.onclick = () => {
+        noRegSubFilter = 'all';
+        render();
+      };
+    } else {
+      emptyState.style.display = 'none';
     }
   }
 
@@ -563,9 +902,10 @@
       jumpBar.style.display = 'flex';
       jumpBarChips.innerHTML = '';
       categoriesToRender[0].groups.forEach((g, idx) => {
+        const groupName = window.i18n ? window.i18n.getGroupName(g) : g.name;
         const chip = document.createElement('button');
         chip.className = 'jump-chip';
-        chip.textContent = `${g.name} (${g.tools.length})`;
+        chip.textContent = `${groupName} (${g.tools.length})`;
         chip.addEventListener('click', () => {
           const el = document.getElementById(`group-sec-${idx}`);
           if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -575,6 +915,8 @@
     }
 
     for (const cat of categoriesToRender) {
+      const catTitle = window.i18n ? window.i18n.getCategoryTitle(cat) : cat.title;
+
       const section = document.createElement('section');
       section.className = 'category-section';
       section.id = `cat-${cat.slug}`;
@@ -585,8 +927,8 @@
         header.className = 'category-header';
         header.innerHTML = `
           <div class="category-header__emoji">${cat.emoji}</div>
-          <h2 class="category-header__title">${escapeHtml(cat.title)}</h2>
-          <span class="category-header__count">${cat.toolCount} outil${cat.toolCount > 1 ? 's' : ''}</span>
+          <h2 class="category-header__title">${escapeHtml(catTitle)}</h2>
+          <span class="category-header__count">${cat.toolCount} ${cat.toolCount > 1 ? t('tools_label') : t('tool_label')}</span>
         `;
         section.appendChild(header);
       }
@@ -599,13 +941,15 @@
           tools.sort((a, b) => a.name.localeCompare(b.name));
         }
 
+        const groupName = window.i18n ? window.i18n.getGroupName(group) : group.name;
+
         const groupEl = document.createElement('div');
         groupEl.className = 'group';
         groupEl.id = `group-sec-${gIdx}`;
 
         groupEl.innerHTML = `
           <div class="group__header">
-            <h3 class="group__name">${escapeHtml(group.name)}</h3>
+            <h3 class="group__name">${escapeHtml(groupName)}</h3>
             <span class="group__count">${tools.length}</span>
           </div>
         `;
@@ -614,9 +958,9 @@
         grid.className = 'tools-grid';
 
         for (const tool of tools) {
-          tool._categoryTitle = cat.title;
+          tool._categoryTitle = catTitle;
           tool._categorySlug = cat.slug;
-          grid.appendChild(createToolCard(tool, cat.title, categoriesToRender.length > 1));
+          grid.appendChild(createToolCard(tool, catTitle, categoriesToRender.length > 1));
           totalToolsRendered++;
         }
 
@@ -633,9 +977,10 @@
   function renderFavoritesView() {
     const allToolsMap = new Map();
     DATA.categories.forEach(c => {
+      const catTitle = window.i18n ? window.i18n.getCategoryTitle(c) : c.title;
       c.groups.forEach(g => {
         g.tools.forEach(t => {
-          t._categoryTitle = c.title;
+          t._categoryTitle = catTitle;
           t._categorySlug = c.slug;
           allToolsMap.set(t.url, t);
         });
@@ -655,9 +1000,9 @@
 
     if (favTools.length === 0) {
       emptyState.style.display = '';
-      emptyStateTitle.textContent = 'Aucun outil dans vos favoris';
-      emptyStateDesc.textContent = 'Cliquez sur l\'étoile (★) d\'une carte d\'outil pour l\'épingler dans cet espace de travail permanent.';
-      emptyStateBtn.textContent = 'Explorer tous les outils';
+      emptyStateTitle.textContent = t('favorites_empty_title');
+      emptyStateDesc.textContent = t('favorites_empty_desc');
+      emptyStateBtn.textContent = t('favorites_empty_btn');
       emptyStateBtn.onclick = () => selectCategory('all');
       return;
     }
@@ -681,9 +1026,9 @@
   function renderRecentView() {
     if (recentTools.length === 0) {
       emptyState.style.display = '';
-      emptyStateTitle.textContent = 'Aucun outil consulté récemment';
-      emptyStateDesc.textContent = 'Les outils que vous ouvrirez durant vos investigations apparaîtront automatiquement ici.';
-      emptyStateBtn.textContent = 'Parcourir le catalogue';
+      emptyStateTitle.textContent = t('recent_empty_title');
+      emptyStateDesc.textContent = t('recent_empty_desc');
+      emptyStateBtn.textContent = t('recent_empty_btn');
       emptyStateBtn.onclick = () => selectCategory('all');
       return;
     }
@@ -697,13 +1042,14 @@
     grid.className = 'tools-grid';
 
     for (const tool of recentTools) {
-      grid.appendChild(createToolCard(tool, tool.categoryTitle || 'Outil OSINT', true));
+      grid.appendChild(createToolCard(tool, tool.categoryTitle || 'OSINT', true));
     }
 
     section.appendChild(grid);
     container.appendChild(section);
   }
 
+  // --- Bilingual Search Engine ---
   function renderSearchView() {
     const query = searchQuery.toLowerCase().trim();
     const matchedCategories = [];
@@ -711,24 +1057,48 @@
     const categoryHitsMap = new Map();
 
     for (const cat of DATA.categories) {
-      const catTitleMatch = cat.title.toLowerCase().includes(query);
+      const catTitleFr = (cat.title_fr || cat.title || '').toLowerCase();
+      const catTitleEn = (cat.title_en || cat.title || '').toLowerCase();
+      const catTitleMatch = catTitleFr.includes(query) || catTitleEn.includes(query);
+
       const matchingGroups = [];
 
       for (const group of cat.groups) {
-        const groupNameMatch = group.name.toLowerCase().includes(query);
+        const groupNameFr = (group.name_fr || group.name || '').toLowerCase();
+        const groupNameEn = (group.name_en || group.name || '').toLowerCase();
+        const groupNameMatch = groupNameFr.includes(query) || groupNameEn.includes(query);
+
         const matchingTools = group.tools.filter(t => {
+          const nameMatch = (t.name || '').toLowerCase().includes(query);
+          const descEnMatch = (t.description || '').toLowerCase().includes(query);
+          const descFrMatch = (t.description_fr || '').toLowerCase().includes(query);
+          const domainMatch = getDomain(t.url).toLowerCase().includes(query);
+
+          // Access status matching
+          const accessKey = t.access || 'to_verify';
+          const accessInfo = window.i18n ? window.i18n.getAccessInfo(accessKey) : null;
+          const accessLabelMatch = accessInfo && accessInfo.label.toLowerCase().includes(query);
+          const accessDetailsFrMatch = (t.access_details_fr || '').toLowerCase().includes(query);
+          const accessDetailsEnMatch = (t.access_details_en || '').toLowerCase().includes(query);
+
           return (
             catTitleMatch ||
             groupNameMatch ||
-            t.name.toLowerCase().includes(query) ||
-            t.description.toLowerCase().includes(query) ||
-            getDomain(t.url).toLowerCase().includes(query)
+            nameMatch ||
+            descEnMatch ||
+            descFrMatch ||
+            domainMatch ||
+            accessLabelMatch ||
+            accessDetailsFrMatch ||
+            accessDetailsEnMatch
           );
         });
 
         if (matchingTools.length > 0) {
           matchingGroups.push({
             name: group.name,
+            name_fr: group.name_fr,
+            name_en: group.name_en,
             tools: matchingTools
           });
         }
@@ -736,25 +1106,31 @@
 
       if (matchingGroups.length > 0) {
         const count = matchingGroups.reduce((s, g) => s + g.tools.length, 0);
+        const localizedCatTitle = window.i18n ? window.i18n.getCategoryTitle(cat) : cat.title;
         matchedCategories.push({
           slug: cat.slug,
           emoji: cat.emoji,
-          title: cat.title,
+          title: localizedCatTitle,
           groups: matchingGroups,
           matchCount: count
         });
-        categoryHitsMap.set(cat.slug, { title: cat.title, count });
+        categoryHitsMap.set(cat.slug, { title: localizedCatTitle, count });
         totalMatches += count;
       }
     }
 
     // Build Results Banner & Filter Chips
-    resultsCountText.innerHTML = `<strong>${totalMatches}</strong> outil${totalMatches > 1 ? 's' : ''} trouvé${totalMatches > 1 ? 's' : ''} pour « <strong>${escapeHtml(query)}</strong> »`;
+    const isEn = window.i18n && window.i18n.getLang() === 'en';
+    const toolWord = totalMatches > 1 ? t('tools_label') : t('tool_label');
+    const foundWord = totalMatches > 1 ? t('found_plural') : t('found_label');
+    const forWord = isEn ? 'for' : 'pour';
+
+    resultsCountText.innerHTML = `<strong>${totalMatches}</strong> ${toolWord} ${foundWord} ${forWord} « <strong>${escapeHtml(query)}</strong> »`;
 
     resultsChips.innerHTML = '';
     const allChip = document.createElement('button');
     allChip.className = `result-cat-chip ${!activeSearchCategoryFilter ? 'is-active' : ''}`;
-    allChip.textContent = `Tous (${totalMatches})`;
+    allChip.textContent = `${isEn ? 'All' : 'Tous'} (${totalMatches})`;
     allChip.addEventListener('click', () => {
       activeSearchCategoryFilter = null;
       render();
@@ -775,8 +1151,10 @@
     // Cross-module IntelX action chip
     const intelxSearchChip = document.createElement('button');
     intelxSearchChip.className = 'result-cat-chip result-cat-chip--intelx';
-    intelxSearchChip.title = `Lancer une recherche d'archives et de leaks sur « ${escapeHtml(query)} » dans Intelligence X`;
-    intelxSearchChip.innerHTML = `<span>⚡</span> Rechercher « <strong>${escapeHtml(query)}</strong> » dans IntelX`;
+    intelxSearchChip.title = isEn
+      ? `Search archives and leaks for "${escapeHtml(query)}" in Intelligence X`
+      : `Lancer une recherche d'archives et de leaks sur « ${escapeHtml(query)} » dans Intelligence X`;
+    intelxSearchChip.innerHTML = `<span>⚡</span> ${isEn ? 'Search' : 'Rechercher'} « <strong>${escapeHtml(query)}</strong> » ${isEn ? 'in IntelX' : 'dans IntelX'}`;
     intelxSearchChip.addEventListener('click', () => {
       switchToIntelX(query);
     });
@@ -790,9 +1168,11 @@
 
     if (totalMatches === 0 || displayCategories.length === 0) {
       emptyState.style.display = '';
-      emptyStateTitle.textContent = 'Aucun outil correspondant dans le catalogue';
-      emptyStateDesc.innerHTML = `Aucun outil local ne correspond à « <strong>${escapeHtml(query)}</strong> ». Vous pouvez relancer ce sélecteur dans les archives d'Intelligence X ou réinitialiser la recherche.`;
-      emptyStateBtn.textContent = `⚡ Rechercher « ${escapeHtml(query)} » dans IntelX`;
+      emptyStateTitle.textContent = t('no_results_title');
+      emptyStateDesc.innerHTML = isEn
+        ? `No local tool matches « <strong>${escapeHtml(query)}</strong> ». You can launch this selector in Intelligence X archives or reset the search.`
+        : `Aucun outil local ne correspond à « <strong>${escapeHtml(query)}</strong> ». Vous pouvez relancer ce sélecteur dans les archives d'Intelligence X ou réinitialiser la recherche.`;
+      emptyStateBtn.textContent = `⚡ ${isEn ? 'Search' : 'Rechercher'} « ${escapeHtml(query)} » ${isEn ? 'in IntelX' : 'dans IntelX'}`;
       emptyStateBtn.onclick = () => switchToIntelX(query);
       return;
     }
@@ -808,7 +1188,7 @@
       header.innerHTML = `
         <div class="category-header__emoji">${cat.emoji}</div>
         <h2 class="category-header__title">${highlightText(cat.title, query)}</h2>
-        <span class="category-header__count">${cat.matchCount} résultat${cat.matchCount > 1 ? 's' : ''}</span>
+        <span class="category-header__count">${cat.matchCount} ${cat.matchCount > 1 ? t('results_label') : t('result_label')}</span>
       `;
       section.appendChild(header);
 
@@ -818,11 +1198,13 @@
           tools.sort((a, b) => a.name.localeCompare(b.name));
         }
 
+        const groupName = window.i18n ? window.i18n.getGroupName(group) : group.name;
+
         const groupEl = document.createElement('div');
         groupEl.className = 'group';
         groupEl.innerHTML = `
           <div class="group__header">
-            <h3 class="group__name">${highlightText(group.name, query)}</h3>
+            <h3 class="group__name">${highlightText(groupName, query)}</h3>
             <span class="group__count">${tools.length}</span>
           </div>
         `;
@@ -857,6 +1239,16 @@
     const initialLetter = (tool.name || 'O').charAt(0).toUpperCase();
     const isIntelXTool = /intelx|intelligence\s*x/i.test(tool.name || '') || /intelx\.io/i.test(tool.url || '');
 
+    // Internationalized tool description & access status
+    const description = window.i18n ? window.i18n.getToolDescription(tool) : tool.description;
+    const accessKey = tool.access || 'to_verify';
+    const accessInfo = window.i18n ? window.i18n.getAccessInfo(accessKey) : null;
+    const isEn = window.i18n && window.i18n.getLang() === 'en';
+
+    // Tooltip detail (prefers tool-specific explanation when available, fallback to status definition)
+    const accessDetails = (isEn ? tool.access_details_en : tool.access_details_fr) || (accessInfo ? accessInfo.desc : '');
+    const accessLabel = accessInfo ? accessInfo.label : accessKey;
+
     card.innerHTML = `
       <div class="tool-card__header">
         <div class="tool-card__brand">
@@ -874,25 +1266,26 @@
           </div>
         </div>
         <div class="tool-card__actions">
-          <button class="tool-card__btn tool-card__btn--pivot" title="Pivoter ce domaine dans Intelligence X" data-domain="${escapeHtml(domain)}">
+          <button class="tool-card__btn tool-card__btn--pivot" title="${escapeHtml(t('pivot_intelx_title'))}" data-domain="${escapeHtml(domain)}">
             <span style="font-size:0.75rem; font-weight:700; color:var(--accent-cyan);">⚡</span>
           </button>
-          <button class="tool-card__btn tool-card__btn--copy" title="Copier l'URL">
+          <button class="tool-card__btn tool-card__btn--copy" title="${escapeHtml(t('copy_url_title'))}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
               <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
             </svg>
           </button>
-          <button class="tool-card__btn tool-card__btn--star ${isStarred ? 'is-starred' : ''}" data-url="${escapeHtml(tool.url)}" title="${isStarred ? 'Retirer des favoris' : 'Ajouter aux favoris'}">
+          <button class="tool-card__btn tool-card__btn--star ${isStarred ? 'is-starred' : ''}" data-url="${escapeHtml(tool.url)}" title="${isStarred ? escapeHtml(t('fav_remove_title')) : escapeHtml(t('fav_add_title'))}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
             </svg>
           </button>
         </div>
       </div>
-      ${tool.description ? `<p class="tool-card__desc">${highlightText(tool.description, query)}</p>` : ''}
+      ${description ? `<p class="tool-card__desc">${highlightText(description, query)}</p>` : ''}
       <div class="tool-card__footer">
-        ${isIntelXTool ? `<span class="tool-card__tag tool-card__tag--intelx" title="Ouvrir le module d'investigation Intelligence X">⚡ Module Intégré</span>` : ''}
+        <span class="access-badge access-badge--${accessKey}" title="${escapeHtml(accessDetails)}">${escapeHtml(accessLabel)}</span>
+        ${isIntelXTool ? `<span class="tool-card__tag tool-card__tag--intelx" title="${escapeHtml(t('intelx_module'))}">⚡ ${escapeHtml(t('integrated_module'))}</span>` : ''}
         ${showTag && categoryTag ? `<span class="tool-card__tag">${escapeHtml(categoryTag)}</span>` : ''}
       </div>
     `;
@@ -1081,6 +1474,47 @@
 
   // --- Attach Event Handlers ---
   function attachEventHandlers() {
+    // Language Switch Buttons & Container Delegation
+    const langSwitchEl = document.getElementById('lang-switch');
+    if (langSwitchEl) {
+      langSwitchEl.addEventListener('click', (e) => {
+        const btn = e.target.closest('.lang-btn');
+        if (!btn) return;
+        const targetLang = btn.dataset.lang;
+        if (targetLang && window.i18n && window.i18n.getLang() !== targetLang) {
+          window.i18n.setLang(targetLang);
+        }
+      });
+    }
+
+    if (langBtnFr) {
+      langBtnFr.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (window.i18n && window.i18n.getLang() !== 'fr') {
+          window.i18n.setLang('fr');
+        }
+      });
+    }
+
+    if (langBtnEn) {
+      langBtnEn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (window.i18n && window.i18n.getLang() !== 'en') {
+          window.i18n.setLang('en');
+        }
+      });
+    }
+
+    // React to language changes
+    if (window.i18n) {
+      window.i18n.onLanguageChange(() => {
+        updateLanguageUI();
+        buildSidebarNav();
+        render();
+        showToast(t('toast_lang_changed'));
+      });
+    }
+
     // Search Events
     searchInput.addEventListener('input', handleSearchInput);
     searchClear.addEventListener('click', clearSearch);
@@ -1138,7 +1572,7 @@
     densityToggle.addEventListener('click', () => {
       const newDensity = currentDensity === 'compact' ? 'comfortable' : 'compact';
       applyDensity(newDensity);
-      showToast(newDensity === 'compact' ? 'Mode compact activé' : 'Mode standard activé');
+      showToast(newDensity === 'compact' ? t('toast_density_compact') : t('toast_density_comfortable'));
     });
 
     // Shortcuts Modal
@@ -1179,6 +1613,7 @@
     setupSidebarResizer();
     setupKeyboardListeners();
     attachEventHandlers();
+    updateLanguageUI();
 
     // Restore collapsed sidebar state on desktop
     try {
@@ -1187,9 +1622,9 @@
       }
     } catch (e) { /* ignore */ }
 
-    // Fetch data
+    // Fetch data with cache-busting to prevent stale browser responses
     try {
-      const res = await fetch('data.json');
+      const res = await fetch('data.json?v=' + Date.now(), { cache: 'no-cache' });
       DATA = await res.json();
     } catch (err) {
       container.innerHTML = `

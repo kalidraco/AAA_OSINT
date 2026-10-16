@@ -71,6 +71,13 @@
 
     <!-- Actions & Stats -->
     <div class="topbar__right">
+      <!-- Language Switcher -->
+      <div class="lang-switch" id="lang-switch" role="group" aria-label="Langue / Language">
+        <button class="lang-btn is-active" id="lang-btn-fr" data-lang="fr" aria-label="Français" title="Passer en français">FR</button>
+        <span class="lang-sep">/</span>
+        <button class="lang-btn" id="lang-btn-en" data-lang="en" aria-label="English" title="Switch to English">EN</button>
+      </div>
+
       <!-- Density Toggle -->
       <button class="topbar__icon-btn" id="density-toggle" aria-label="Changer la densité d'affichage" title="Densité d'affichage (Compact / Confortable)">
         <svg class="icon-dense" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -97,9 +104,9 @@
 
       <!-- Live metrics -->
       <div class="topbar__stats">
-        <span class="topbar__stat"><strong id="stat-tools">—</strong> outils</span>
+        <span class="topbar__stat"><strong id="stat-tools">—</strong> <span id="label-stat-tools">outils</span></span>
         <span class="topbar__stat-sep">·</span>
-        <span class="topbar__stat"><strong id="stat-categories">—</strong> catégories</span>
+        <span class="topbar__stat"><strong id="stat-categories">—</strong> <span id="label-stat-categories">catégories</span></span>
       </div>
     </div>
   </header>
@@ -114,21 +121,26 @@
 
       <!-- Quick Access Hub -->
       <div class="sidebar__quick-hub">
-        <div class="sidebar__group-label">Espace de travail</div>
+        <div class="sidebar__group-label" id="sidebar-hub-label">Espace de travail</div>
         <nav class="sidebar__quick-nav">
           <button class="sidebar-item sidebar-item--active" data-nav="all" data-tooltip="Tous les outils (947)">
             <span class="sidebar-item__icon">🌐</span>
-            <span class="sidebar-item__text">Tous les outils</span>
+            <span class="sidebar-item__text" id="label-nav-all">Tous les outils</span>
             <span class="sidebar-item__count" id="count-all">947</span>
+          </button>
+          <button class="sidebar-item" data-nav="no-registration" data-tooltip="Outils sans inscription">
+            <span class="sidebar-item__icon">🔓</span>
+            <span class="sidebar-item__text" id="label-nav-no-reg">Sans inscription</span>
+            <span class="sidebar-item__count" id="count-no-registration">501</span>
           </button>
           <button class="sidebar-item" data-nav="favorites" data-tooltip="Favoris enregistrés">
             <span class="sidebar-item__icon">⭐</span>
-            <span class="sidebar-item__text">Favoris</span>
+            <span class="sidebar-item__text" id="label-nav-favorites">Favoris</span>
             <span class="sidebar-item__count" id="count-favorites">0</span>
           </button>
           <button class="sidebar-item" data-nav="recent" data-tooltip="Outils récemment ouverts">
             <span class="sidebar-item__icon">🕒</span>
-            <span class="sidebar-item__text">Récemment consultés</span>
+            <span class="sidebar-item__text" id="label-nav-recent">Récemment consultés</span>
             <span class="sidebar-item__count" id="count-recent">0</span>
           </button>
           <button class="sidebar-item sidebar-item--intelx" data-nav="intelx" data-tooltip="Module d'investigation Intelligence X">
@@ -231,11 +243,11 @@
       <footer class="footer">
         <div class="footer__content">
           <p>
-            <strong class="footer__brand">AAA_OSINT</strong> — Workspace d'investigation en sources ouvertes.
-            Licence <a href="./LICENSE" target="_blank" rel="noopener">CC0 1.0 Universal</a> ·
-            <a href="https://github.com/kalidraco/AAA_OSINT" target="_blank" rel="noopener">Code source GitHub</a>
+            <strong class="footer__brand">AAA_OSINT</strong> — <span id="footer-brand-desc">Workspace d'investigation en sources ouvertes.</span>
+            <span id="footer-license-text">Licence</span> <a href="./LICENSE" target="_blank" rel="noopener">CC0 1.0 Universal</a> ·
+            <a href="https://github.com/kalidraco/AAA_OSINT" target="_blank" rel="noopener" id="footer-github-link">Code source GitHub</a>
           </p>
-          <p class="footer__note">⚠️ La majorité des outils sont des services tiers. Vérifiez toujours la légalité et la sécurité de vos requêtes dans le cadre de vos investigations.</p>
+          <p class="footer__note" id="footer-note">⚠️ La majorité des outils sont des services tiers. Vérifiez toujours la légalité et la sécurité de vos requêtes dans le cadre de vos investigations.</p>
         </div>
       </footer>
     </div>
@@ -253,38 +265,38 @@
         <table class="shortcuts-table">
           <thead>
             <tr>
-              <th>Raccourci</th>
-              <th>Action</th>
+              <th id="th-shortcut">Raccourci</th>
+              <th id="th-action">Action</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td><kbd class="kbd-badge" id="kbd-shortcut-search">Ctrl+K</kbd> ou <kbd class="kbd-badge">/</kbd></td>
-              <td>Activer et cibler la recherche globale</td>
+              <td><kbd class="kbd-badge" id="kbd-shortcut-search">Ctrl+K</kbd> <span id="label-or-slash">ou</span> <kbd class="kbd-badge">/</kbd></td>
+              <td id="row-shortcut-search">Activer et cibler la recherche globale</td>
             </tr>
             <tr>
               <td><kbd class="kbd-badge" id="kbd-shortcut-sidebar">Ctrl+B</kbd></td>
-              <td>Masquer / Déplier la barre latérale</td>
+              <td id="row-shortcut-sidebar">Masquer / Déplier la barre latérale</td>
             </tr>
             <tr>
-              <td><kbd class="kbd-badge">Échap</kbd></td>
-              <td>Effacer la recherche / Fermer les fenêtres</td>
+              <td><kbd class="kbd-badge" id="kbd-shortcut-esc">Échap</kbd></td>
+              <td id="row-shortcut-esc">Effacer la recherche / Fermer les fenêtres</td>
             </tr>
             <tr>
               <td><kbd class="kbd-badge">↑</kbd> <kbd class="kbd-badge">↓</kbd></td>
-              <td>Naviguer au clavier parmi les cartes d'outils</td>
+              <td id="row-shortcut-nav">Naviguer au clavier parmi les cartes d'outils</td>
             </tr>
             <tr>
-              <td><kbd class="kbd-badge">Entrée</kbd></td>
-              <td>Ouvrir le lien de l'outil sélectionné</td>
+              <td><kbd class="kbd-badge" id="kbd-shortcut-enter">Entrée</kbd></td>
+              <td id="row-shortcut-enter">Ouvrir le lien de l'outil sélectionné</td>
             </tr>
             <tr>
-              <td><kbd class="kbd-badge">Double-clic</kbd> (sur la bordure)</td>
-              <td>Réinitialiser la largeur de la barre latérale</td>
+              <td><kbd class="kbd-badge" id="kbd-shortcut-dblclick">Double-clic</kbd> <span id="label-border-hint">(sur la bordure)</span></td>
+              <td id="row-shortcut-resize">Réinitialiser la largeur de la barre latérale</td>
             </tr>
             <tr>
               <td><kbd class="kbd-badge">?</kbd></td>
-              <td>Afficher cette aide des raccourcis</td>
+              <td id="row-shortcut-help">Afficher cette aide des raccourcis</td>
             </tr>
           </tbody>
         </table>
@@ -298,9 +310,10 @@
   <!-- Back to top floating button -->
   <button class="back-to-top" id="back-to-top" aria-label="Retour en haut de page" title="Haut de page">↑</button>
 
-  <!-- Scripts -->
-  <script src="intelx-client.js"></script>
-  <script src="intelx-ui.js"></script>
-  <script src="app.js"></script>
+  <!-- Scripts (versioned to prevent stale browser cache) -->
+  <script src="i18n.js?v=2.2.0"></script>
+  <script src="intelx-client.js?v=2.2.0"></script>
+  <script src="intelx-ui.js?v=2.2.0"></script>
+  <script src="app.js?v=2.2.0"></script>
 </body>
 </html>

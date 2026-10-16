@@ -579,10 +579,16 @@ function handleStaticFile(req, res, pathname) {
     const ext = path.extname(filePath).toLowerCase();
     const contentType = MIME_TYPES[ext] || 'application/octet-stream';
 
+    // Avoid aggressive caching for HTML, JS and JSON so data/code updates take effect immediately
+    const noCacheExts = ['.html', '.js', '.json'];
+    const cacheControl = noCacheExts.includes(ext)
+      ? 'no-cache, no-store, must-revalidate'
+      : 'public, max-age=3600';
+
     res.writeHead(200, {
       'Content-Type': contentType,
       'Content-Length': stats.size,
-      'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=3600',
+      'Cache-Control': cacheControl,
     });
 
     const stream = fs.createReadStream(filePath);
