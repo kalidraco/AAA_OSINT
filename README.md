@@ -37,9 +37,36 @@ http://localhost:3000
 
 | Command | Action |
 |---|---|
-| `npm run dev` | Rebuilds the data JSON and launches the local dev server on port `3000` |
+| `npm run dev` | Rebuilds data JSON and launches the full local server with Intelligence X proxy on port `3000` |
+| `npm run server` | Starts the Node.js server and secure Intelligence X proxy on port `3000` |
+| `npm test` | Runs the automated test suite (selectors, masking, polling, mock proxy, catalog integrity) |
 | `npm run build` | Parses all markdown files in `docs/` and generates `site/data.json` |
-| `npm run serve` | Serves the existing `site/` folder directly on port `3000` |
+| `npm run serve` | Serves the static `site/` folder directly on port `3000` (without local API proxy) |
+
+---
+
+## ⚡ Intelligence X Investigation Module
+
+AAA_OSINT features a native, real-time investigation module powered by the official **Intelligence X (IntelX) API** (`https://2.intelx.io`), allowing investigators to pivot seamlessly between catalog tools and live correlation queries.
+
+### Key Capabilities
+- **Multi-Selector Analysis:** Automatic classification and query execution for emails, domain names, IPv4/IPv6 addresses, CIDR network blocks, URLs, international phone numbers, crypto addresses, and cryptographic hashes (MD5, SHA-1, SHA-256).
+- **Asynchronous Search & Polling:** Non-blocking async queries using IntelX search IDs with real-time progressive polling, countdown indicators, and clean user-abort termination.
+- **Phonebook OSINT:** Domain-level enumeration of associated subdomains, employee emails, and indexed URLs via `/phonebook/search`.
+- **Targeted Source Filters:** Narrow searches by buckets (`pastes`, `darknet.tor`, `darknet.i2p`, `leaks.public`, `web.public`, `whois`) and content media types.
+- **Privacy & Sensitive Data Masking:** Previews automatically redact passwords, API tokens, combo credentials, and private keys by default, with an explicit analyst toggle to reveal raw content when legally and operationally authorized.
+- **Cross-Search Pivoting:** Jump from global search results or catalog tool cards directly into Intelligence X with one click, pre-filling the selector without executing unprompted costly requests.
+
+### API Key Configuration & Security
+- **No Hardcoded Keys:** Neither the repository nor client-side bundles contain pre-configured keys.
+- **Configuration Options:**
+  1. **UI Dialog:** Enter your personal API key via the **« Configurer Clé API »** header button in the module. Store it ephemerally in `sessionStorage` (cleared on browser close) or `localStorage`.
+  2. **Environment Variable:** Set `INTELX_KEY="your-api-key"` on the server hosting `server.js` for automatic server-side authentication without transmitting keys in client requests.
+- **Local Proxy Architecture:** `server.js` relays queries to `https://2.intelx.io`, keeping your API key protected from third-party interception or CORS limitations.
+- **Simulation / Mock Mode:** Set `INTELX_MOCK=true` or send header `x-intelx-mock: true` to test and demonstrate full workflows without consuming live Intelligence X query credits.
+
+### ⚖️ Legal & Licensing Notice
+Intelligence X™ is a service provided by Intelligence X Services GmbH. Usage of the API is subject to the [Intelligence X Terms of Service](https://intelx.io/terms-of-service). Integration into commercial products or services requires a paid commercial license from Intelligence X. Users are responsible for complying with applicable privacy and investigation regulations.
 
 ---
 

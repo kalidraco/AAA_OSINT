@@ -1,12 +1,14 @@
 {
   "name": "aaa_osint",
-  "version": "2.0.0",
-  "description": "AAA_OSINT — A curated collection of 940+ OSINT tools & resources with an interactive web UI",
+  "version": "2.1.0",
+  "description": "AAA_OSINT — Curated collection of 947 OSINT tools & resources with interactive investigation workspace and Intelligence X integration",
   "scripts": {
     "build": "node scripts/build-data.js",
-    "dev": "node scripts/build-data.js && npx -y serve site -l 3000",
-    "serve": "npx -y serve site -l 3000"
+    "dev": "node scripts/build-data.js && node server.js",
+    "server": "node server.js",
+    "serve": "npx -y serve site -l 3000",
+    "test": "node test/test-intelx.js"
   },
-  "keywords": ["osint", "tools", "resources", "intelligence", "investigations"],
+  "keywords": ["osint", "tools", "resources", "intelligence", "investigations", "intelx"],
   "license": "CC0-1.0"
 }

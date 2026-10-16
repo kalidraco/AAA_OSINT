@@ -43,13 +43,17 @@
 
   // --- State ---
   let DATA = null;
-  let activeView = 'all'; // 'all' | 'favorites' | 'recent' | [category slug]
+  let activeView = 'all'; // 'all' | 'favorites' | 'recent' | 'intelx' | [category slug]
   let searchQuery = '';
   let activeSearchCategoryFilter = null; // slug or null
   let sortMode = 'default'; // 'default' | 'alpha'
   let keyboardFocusedIndex = -1;
   let searchDebounceTimer = null;
   let toastTimer = null;
+
+  // IntelX Client & UI Instances
+  let intelxClient = null;
+  let intelxUI = null;
 
   // LocalStorage Stores
   const favorites = new Set(loadJSON('aaa_favorites', []));
@@ -438,6 +442,30 @@
     });
   }
 
+  // --- Switch to Intelligence X View with Optional Prefill ---
+  function switchToIntelX(prefilledSelector = '') {
+    activeView = 'intelx';
+    activeSearchCategoryFilter = null;
+    searchQuery = '';
+    searchInput.value = '';
+    searchClear.style.display = 'none';
+    searchKbd.style.display = '';
+
+    updateActiveSidebarItem();
+    render();
+
+    if (prefilledSelector && intelxUI) {
+      intelxUI.setPrefilledSelector(prefilledSelector);
+    }
+
+    if (isMobile()) {
+      sidebar.classList.remove('is-open');
+      sidebarOverlay.classList.remove('is-visible');
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   // --- Workspace Rendering Engine ---
   function render() {
     keyboardFocusedIndex = -1;
@@ -447,6 +475,14 @@
 
     // Update Context / Breadcrumb Bar
     updateContextBar();
+
+    // 0. Intelligence X Investigation View
+    if (activeView === 'intelx' && !searchQuery) {
+      if (intelxUI) {
+        intelxUI.render();
+      }
+      return;
+    }
 
     // 1. Favorites View
     if (activeView === 'favorites' && !searchQuery) {
@@ -486,6 +522,11 @@
       breadcrumbCurrent.textContent = 'Tous les outils';
       contextTitle.textContent = 'Catalogue général OSINT';
       contextCount.textContent = `${DATA.totalTools} outils · 25 catégories`;
+    } else if (activeView === 'intelx') {
+      breadcrumbRoot.textContent = 'Espace de travail';
+      breadcrumbCurrent.textContent = 'Intelligence X';
+      contextTitle.textContent = '⚡ Module d\'Investigation Intelligence X';
+      contextCount.textContent = 'Archives & Leaks connectées';
     } else if (activeView === 'favorites') {
       breadcrumbRoot.textContent = 'Espace de travail';
       breadcrumbCurrent.textContent = 'Favoris';
@@ -731,6 +772,16 @@
       resultsChips.appendChild(chip);
     }
 
+    // Cross-module IntelX action chip
+    const intelxSearchChip = document.createElement('button');
+    intelxSearchChip.className = 'result-cat-chip result-cat-chip--intelx';
+    intelxSearchChip.title = `Lancer une recherche d'archives et de leaks sur « ${escapeHtml(query)} » dans Intelligence X`;
+    intelxSearchChip.innerHTML = `<span>⚡</span> Rechercher « <strong>${escapeHtml(query)}</strong> » dans IntelX`;
+    intelxSearchChip.addEventListener('click', () => {
+      switchToIntelX(query);
+    });
+    resultsChips.appendChild(intelxSearchChip);
+
     // Filter categories if specific chip active
     let displayCategories = matchedCategories;
     if (activeSearchCategoryFilter) {
@@ -739,10 +790,10 @@
 
     if (totalMatches === 0 || displayCategories.length === 0) {
       emptyState.style.display = '';
-      emptyStateTitle.textContent = 'Aucun outil correspondant';
-      emptyStateDesc.textContent = `Aucun outil ne correspond au terme « ${escapeHtml(query)} ». Essayez avec un mot-clé plus générique ou vérifiez l'orthographe.`;
-      emptyStateBtn.textContent = 'Effacer la recherche';
-      emptyStateBtn.onclick = clearSearch;
+      emptyStateTitle.textContent = 'Aucun outil correspondant dans le catalogue';
+      emptyStateDesc.innerHTML = `Aucun outil local ne correspond à « <strong>${escapeHtml(query)}</strong> ». Vous pouvez relancer ce sélecteur dans les archives d'Intelligence X ou réinitialiser la recherche.`;
+      emptyStateBtn.textContent = `⚡ Rechercher « ${escapeHtml(query)} » dans IntelX`;
+      emptyStateBtn.onclick = () => switchToIntelX(query);
       return;
     }
 
@@ -804,6 +855,7 @@
     const faviconSrc = getFaviconUrl(tool.url);
     const isStarred = favorites.has(tool.url);
     const initialLetter = (tool.name || 'O').charAt(0).toUpperCase();
+    const isIntelXTool = /intelx|intelligence\s*x/i.test(tool.name || '') || /intelx\.io/i.test(tool.url || '');
 
     card.innerHTML = `
       <div class="tool-card__header">
@@ -822,6 +874,9 @@
           </div>
         </div>
         <div class="tool-card__actions">
+          <button class="tool-card__btn tool-card__btn--pivot" title="Pivoter ce domaine dans Intelligence X" data-domain="${escapeHtml(domain)}">
+            <span style="font-size:0.75rem; font-weight:700; color:var(--accent-cyan);">⚡</span>
+          </button>
           <button class="tool-card__btn tool-card__btn--copy" title="Copier l'URL">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -836,11 +891,10 @@
         </div>
       </div>
       ${tool.description ? `<p class="tool-card__desc">${highlightText(tool.description, query)}</p>` : ''}
-      ${showTag && categoryTag ? `
-        <div class="tool-card__footer">
-          <span class="tool-card__tag">${escapeHtml(categoryTag)}</span>
-        </div>
-      ` : ''}
+      <div class="tool-card__footer">
+        ${isIntelXTool ? `<span class="tool-card__tag tool-card__tag--intelx" title="Ouvrir le module d'investigation Intelligence X">⚡ Module Intégré</span>` : ''}
+        ${showTag && categoryTag ? `<span class="tool-card__tag">${escapeHtml(categoryTag)}</span>` : ''}
+      </div>
     `;
 
     // Favicon Fallback
@@ -854,8 +908,8 @@
 
     // Card Click -> Open Link & Record History
     card.addEventListener('click', (e) => {
-      // Ignore if clicking action buttons
-      if (e.target.closest('.tool-card__btn')) return;
+      // Ignore if clicking action buttons or badges
+      if (e.target.closest('.tool-card__btn') || e.target.closest('.tool-card__tag--intelx')) return;
       recordRecentTool(tool);
       window.open(tool.url, '_blank', 'noopener,noreferrer');
     });
@@ -871,6 +925,26 @@
     starBtn.addEventListener('click', (e) => {
       toggleFavorite(tool, e);
     });
+
+    // Action: Pivot to IntelX
+    const pivotBtn = card.querySelector('.tool-card__btn--pivot');
+    if (pivotBtn) {
+      pivotBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        switchToIntelX(domain);
+      });
+    }
+
+    // Action: IntelX Badge Click
+    const intelxTag = card.querySelector('.tool-card__tag--intelx');
+    if (intelxTag) {
+      intelxTag.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        switchToIntelX(domain || '');
+      });
+    }
 
     return card;
   }
@@ -1131,6 +1205,22 @@
     // Animate stats
     animateCount(statTools, DATA.totalTools);
     animateCount(statCategories, DATA.totalCategories);
+
+    // Initialize Intelligence X Adapter & UI
+    try {
+      if (typeof IntelXClient !== 'undefined' && typeof IntelXUI !== 'undefined') {
+        intelxClient = new IntelXClient();
+        intelxUI = new IntelXUI(intelxClient, {
+          container,
+          onNavigate: (view, term) => {
+            if (view === 'intelx') switchToIntelX(term);
+          },
+          showToast,
+        });
+      }
+    } catch (e) {
+      console.warn('IntelX module initialization deferred or failed:', e);
+    }
 
     // Build sidebar and render initial view
     updateSidebarCounts();
