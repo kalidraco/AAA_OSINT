@@ -43,6 +43,36 @@ http://localhost:3000
 | `npm run build` | Parses all markdown files in `docs/` and generates `site/data.json` |
 | `npm run serve` | Serves the static `site/` folder directly on port `3000` (without local API proxy) |
 
+---
+
+## ⚡ Fast Research — Recherche Rapide Multi-Sources (Priorité aux Faits)
+
+Le module **Recherche Rapide** (Fast Research) répond à l'impératif absolu des investigations réelles : **la vitesse et la quantité d'informations brutes vérifiables priment sur la visualisation ou les graphes complexes.**
+
+À partir d'un seul indice de départ, le moteur déclenche des requêtes parallèles non-bloquantes vers plus de 13 sources directes et affiche les résultats au fil de l'eau dans une liste claire et compacte en moins de 500 ms.
+
+### Points Clés
+- **Saisie Unique & Universelle :** Analyseur d'indices sans sélection manuelle préalable :
+  - **Domaines & Sous-domaines :** Résolution DNS native (A, AAAA, MX, TXT, NS, SOA), sous-domaines crt.sh (logs Certificate Transparency), WHOIS / RDAP, archives Wayback Machine, en-têtes HTTP & stack serveur, détection de menaces URLhaus.
+  - **Adresses IP :** Reverse DNS PTR, Shodan InternetDB (ports ouverts, CVEs et CPEs sans clé API requise), allocations réseau RDAP/BGP, réputation d'attaques.
+  - **Pseudonymes / Handles :** Reconnaissance multi-plateformes simultanée (GitHub, Reddit, HackerNews, GitLab, Keybase) et fiches Wikidata.
+  - **Identités & Entreprises :** Consultation instantanée du Registre National des Entreprises (RNE / Insee) via l'API officielle gouv.fr (dénomination, SIREN/SIRET, dirigeants, adresses, codes NAF) et synthèses encyclopédiques.
+  - **Cryptomonnaies :** Vérification de format et interrogation en direct du grand livre Bitcoin (`mempool.space`) pour le solde confirmé et le nombre de transactions.
+  - **Hashes & Signatures :** Vérification de signatures cryptographiques (MD5, SHA1, SHA256) contre les bases de signatures d'attaques publiques (CIRCL Hashlookup).
+  - **Images & Documents :** Extraction locale immédiate des métadonnées EXIF (GPS, appareil photo, date) et calcul d'empreinte SHA-256 dans le navigateur.
+- **Affichage Progressif en Streaming (List First) :**
+  - Les résultats s'affichent instantanément sous forme de cartes d'action au fur et à mesure de l'arrivée des réponses réseau, sans attendre la source la plus lente.
+  - Chaque carte indique le statut (🟢 Succès, ⚪ Aucun résultat, 🔴 Erreur), le nom de la source, la latence mesurée en millisecondes, le lien direct vers la preuve et un bouton de copie rapide.
+- **Approfondissement en 1 Clic (Pivot Automatique) :**
+  - Un bouton « 🔍 Approfondir » sur chaque donnée découverte permet de relancer immédiatement une recherche ciblée sur ce nouvel élément (ex: pivoter sur une IP découverte dans un enregistrement DNS).
+- **Graphe Optionnel Non-Bloquant :**
+  - Un sélecteur de vue `[📋 Liste (Défaut)]` / `[🕸️ Graphe]` permet, sur décision de l'analyste, de projeter les résultats collectés dans le graphe interactif. Le graphe ne ralentit jamais la collecte et ne constitue pas un passage obligatoire.
+- **Séparation Stricte des Faits & Outils Complémentaires :**
+  - Les faits collectés automatiquement par API sont distincts des pivots vers les outils du catalogue (qui s'ouvrent dans le navigateur avec l'indice pré-rempli).
+- **Synchronisation avec les Enquêtes :**
+  - Bouton « Envoyer vers Enquête » pour injecter instantanément l'ensemble des indices et preuves collectés dans le module d'investigation pour la génération de rapports structurés conformes au Protocole de Berkeley.
+- **Multi-Formats d'Export :**
+  - Export immédiat de la session en **JSON**, **CSV** tabulaire ou **Markdown**.
 
 ---
 

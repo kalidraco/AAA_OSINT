@@ -82,6 +82,7 @@
   // Visual Investigation (Maltego-style) Instances
   let transformsRegistry = null;
   let visualInvestigationUI = null;
+  let fastResearchUI = null;
 
   // LocalStorage Stores
   const favorites = new Set(loadJSON('aaa_favorites', []));
@@ -661,6 +662,30 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  // --- Switch to Fast Research (High-Speed Multi-Sources) ---
+  function switchToFastResearch(indicatorValue = '') {
+    activeView = 'fast-research';
+    activeSearchCategoryFilter = null;
+    searchQuery = '';
+    searchInput.value = '';
+    searchClear.style.display = 'none';
+    searchKbd.style.display = '';
+
+    updateActiveSidebarItem();
+    render();
+
+    if (indicatorValue && fastResearchUI) {
+      fastResearchUI.render(indicatorValue);
+    }
+
+    if (isMobile()) {
+      sidebar.classList.remove('is-open');
+      sidebarOverlay.classList.remove('is-visible');
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   // --- Switch to Visual Investigation Graph (Maltego-style) ---
   function switchToVisualGraph(seedValue = '') {
     activeView = 'visual-graph';
@@ -694,6 +719,14 @@
 
     // Update Context / Breadcrumb Bar
     updateContextBar();
+
+    // 00. Fast Research View (Priority 1)
+    if (activeView === 'fast-research' && !searchQuery) {
+      if (fastResearchUI) {
+        fastResearchUI.render();
+      }
+      return;
+    }
 
     // 0a. Visual Investigation Graph View (Maltego)
     if (activeView === 'visual-graph' && !searchQuery) {
@@ -772,6 +805,11 @@
       contextTitle.textContent = `🔓 ${t('no_reg_title')}`;
       const noRegCount = DATA.noRegistrationCount || 501;
       contextCount.textContent = t('no_reg_count', { count: noRegCount });
+    } else if (activeView === 'fast-research') {
+      breadcrumbRoot.textContent = t('workspace');
+      breadcrumbCurrent.textContent = t('nav_fast_research') || 'Fast Research';
+      contextTitle.textContent = t('fast_research_view_title') || '⚡ Fast Research Multi-Sources';
+      contextCount.textContent = t('fast_research_view_count') || 'Collecte parallèle en direct sans délai';
     } else if (activeView === 'visual-graph') {
       breadcrumbRoot.textContent = t('workspace');
       breadcrumbCurrent.textContent = t('nav_visual_graph') || 'Recherche Visuelle';
@@ -1229,6 +1267,18 @@
       });
       resultsChips.appendChild(chip);
     }
+
+    // Cross-module Fast Research action chip (Priority 1)
+    const fastSearchChip = document.createElement('button');
+    fastSearchChip.className = 'result-cat-chip result-cat-chip--fast-research';
+    fastSearchChip.title = isEn
+      ? `Launch Fast Research for "${escapeHtml(query)}" across all automated sources`
+      : `Lancer Fast Research sur « ${escapeHtml(query)} » sur toutes les sources automatisées`;
+    fastSearchChip.innerHTML = `<span>⚡</span> ${isEn ? 'Fast Research' : 'Recherche Rapide'} « <strong>${escapeHtml(query)}</strong> »`;
+    fastSearchChip.addEventListener('click', () => {
+      switchToFastResearch(query);
+    });
+    resultsChips.appendChild(fastSearchChip);
 
     // Cross-module IntelX action chip
     const intelxSearchChip = document.createElement('button');
@@ -1806,6 +1856,18 @@
       }
     } catch (e) {
       console.warn('Visual graph initialization deferred or failed:', e);
+    }
+
+    // Initialize Fast Research Engine & UI (Priority 1)
+    try {
+      if (typeof FastResearchUI !== 'undefined') {
+        fastResearchUI = new FastResearchUI({
+          containerId: 'categories-container',
+        });
+        fastResearchUI.setCatalogTools(allTools);
+      }
+    } catch (e) {
+      console.warn('Fast research initialization deferred or failed:', e);
     }
 
     // Build sidebar and render initial view
