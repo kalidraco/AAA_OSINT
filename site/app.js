@@ -75,6 +75,10 @@
   let intelxClient = null;
   let intelxUI = null;
 
+  // Investigation Engine & UI Instances
+  let investigationEngine = null;
+  let investigationUI = null;
+
   // LocalStorage Stores
   const favorites = new Set(loadJSON('aaa_favorites', []));
   let recentTools = loadJSON('aaa_recent', []);
@@ -629,6 +633,30 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  // --- Switch to Investigation Workspace View with Optional Indicator ---
+  function switchToInvestigation(indicatorValue = '') {
+    activeView = 'investigation';
+    activeSearchCategoryFilter = null;
+    searchQuery = '';
+    searchInput.value = '';
+    searchClear.style.display = 'none';
+    searchKbd.style.display = '';
+
+    updateActiveSidebarItem();
+    render();
+
+    if (indicatorValue && investigationUI) {
+      investigationUI.addQuickIndicator(indicatorValue);
+    }
+
+    if (isMobile()) {
+      sidebar.classList.remove('is-open');
+      sidebarOverlay.classList.remove('is-visible');
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   // --- Workspace Rendering Engine ---
   function render() {
     keyboardFocusedIndex = -1;
@@ -639,7 +667,15 @@
     // Update Context / Breadcrumb Bar
     updateContextBar();
 
-    // 0. Intelligence X Investigation View
+    // 0. Investigation Workspace View
+    if (activeView === 'investigation' && !searchQuery) {
+      if (investigationUI) {
+        investigationUI.render();
+      }
+      return;
+    }
+
+    // 0b. Intelligence X Investigation View
     if (activeView === 'intelx' && !searchQuery) {
       if (intelxUI) {
         intelxUI.render();
@@ -700,6 +736,11 @@
       contextTitle.textContent = `🔓 ${t('no_reg_title')}`;
       const noRegCount = DATA.noRegistrationCount || 501;
       contextCount.textContent = t('no_reg_count', { count: noRegCount });
+    } else if (activeView === 'investigation') {
+      breadcrumbRoot.textContent = t('workspace');
+      breadcrumbCurrent.textContent = t('nav_investigation') || 'Investigation';
+      contextTitle.textContent = t('investigation_view_title');
+      contextCount.textContent = t('investigation_view_count');
     } else if (activeView === 'intelx') {
       breadcrumbRoot.textContent = t('workspace');
       breadcrumbCurrent.textContent = t('intelx_module');
@@ -1159,6 +1200,18 @@
       switchToIntelX(query);
     });
     resultsChips.appendChild(intelxSearchChip);
+
+    // Cross-module Investigation action chip
+    const invSearchChip = document.createElement('button');
+    invSearchChip.className = 'result-cat-chip result-cat-chip--investigation';
+    invSearchChip.title = isEn
+      ? `Investigate "${escapeHtml(query)}" in the Investigation workspace`
+      : `Ouvrir une enquête sur « ${escapeHtml(query)} » dans le module d'Investigation`;
+    invSearchChip.innerHTML = `<span>🕵️</span> ${isEn ? 'Investigate' : 'Enquêter sur'} « <strong>${escapeHtml(query)}</strong> »`;
+    invSearchChip.addEventListener('click', () => {
+      switchToInvestigation(query);
+    });
+    resultsChips.appendChild(invSearchChip);
 
     // Filter categories if specific chip active
     let displayCategories = matchedCategories;
@@ -1655,6 +1708,28 @@
       }
     } catch (e) {
       console.warn('IntelX module initialization deferred or failed:', e);
+    }
+
+    // Initialize Investigation Engine & UI
+    try {
+      if (typeof InvestigationEngine !== 'undefined' && typeof InvestigationUI !== 'undefined') {
+        investigationEngine = new InvestigationEngine({
+          catalogData: DATA,
+          intelxClient,
+        });
+        investigationUI = new InvestigationUI(investigationEngine, {
+          container,
+          catalogData: DATA,
+          intelxClient,
+          onNavigate: (view, term) => {
+            if (view === 'intelx') switchToIntelX(term);
+            if (view === 'investigation') switchToInvestigation(term);
+          },
+          showToast,
+        });
+      }
+    } catch (e) {
+      console.warn('Investigation module initialization deferred or failed:', e);
     }
 
     // Build sidebar and render initial view

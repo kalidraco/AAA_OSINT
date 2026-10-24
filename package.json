@@ -7,7 +7,7 @@
     "dev": "node scripts/build-data.js && node server.js",
     "server": "node server.js",
     "serve": "npx -y serve site -l 3000",
-    "test": "node test/test-intelx.js && node test/test-features.js"
+    "test": "node test/test-investigation.js && node test/test-features.js && node test/test-intelx.js"
   },
   "keywords": ["osint", "tools", "resources", "intelligence", "investigations", "intelx"],
   "license": "CC0-1.0"

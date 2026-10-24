@@ -6,3 +6,5 @@ node_modules/
 .DS_Store
 Thumbs.db
 .vscode/
+data/investigations/*.json
+!data/investigations/.gitkeep

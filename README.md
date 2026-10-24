@@ -43,9 +43,32 @@ http://localhost:3000
 | `npm run build` | Parses all markdown files in `docs/` and generates `site/data.json` |
 | `npm run serve` | Serves the static `site/` folder directly on port `3000` (without local API proxy) |
 
+
 ---
 
-## ⚡ Intelligence X Investigation Module
+## 🕵️ Investigation Workspace & Automated Reporting
+
+AAA_OSINT transforms from a 947-tool static directory into an active **OSINT Investigation Platform**. The **Investigation** workspace allows analysts to input multi-format indicators, discover and launch relevant tools with pre-filled queries, collect and cross-reference evidence, track event timelines, and generate publication-ready investigative reports following international open-source intelligence standards (Berkeley Protocol).
+
+### Key Features
+- **Multi-Indicator Ingestion:** Automatic classification for 14 indicator types (emails, IPv4/IPv6, domains, URLs, usernames/handles, phone numbers, crypto wallets, MD5/SHA hashes, person names, organizations, documents, images, platform IDs, free text) with manual type override.
+- **Smart Catalog Tool Recommendations & Deep-Linking:** Automatically identifies the best tools from AAA_OSINT's 25 categories and generates direct query URLs (e.g. pre-filling search terms on Epieos, Shodan, DuckDuckGo, ViewDNS, etc.).
+- **Evidence Management & IntelX Live Streaming:** Record manual findings with source URLs, archival snapshots, and confidence metrics, or seamlessly stream search findings directly from the built-in Intelligence X engine.
+- **Automated Cross-Referencing & Correlation Matrix:** Dynamically computes shared entities, infrastructure overlaps, and corroboration levels (**Confirmé** [≥ 2 distinct sources], **Probable**, **Incertain**), allowing analysts to validate (✅) or dispute (❌) correlations.
+- **Structured 6-Section Intelligence Reports:**
+  - **A. Synthèse exécutive** (Executive Summary, Case Objectives & Core Findings)
+  - **B. Tableau des constats** (Detailed Findings with Types, Sources & Dates)
+  - **C. Recoupements & Corrélations** (Validated Cross-References & Corroborated Entities)
+  - **D. Chronologie des faits** (Chronological Event Timeline)
+  - **E. Méthodologie & Limites** (Protocols, Gaps & Traceability)
+  - **F. Sources & Annexes** (Verified Sources with Hashes/Snapshots)
+- **Multi-Format Export:** Instant export to **Markdown (`.md`)**, self-contained **HTML**, and **Print / PDF** (styled with clean page breaks and print optimization).
+- **Persistent Case Management:** File-based REST API (`POST/GET/PUT/DELETE /api/investigation*`) stored under `data/investigations/`, with transparent `localStorage` client-side fallback and JSON backup/restore.
+- **Bilingual Interface (FR/EN):** Full translation parity across all investigative workflows, tables, badges, and generated reports.
+
+---
+
+## ⚡ Intelligence X Integration
 
 AAA_OSINT features a native, real-time investigation module powered by the official **Intelligence X (IntelX) API** (`https://2.intelx.io`), allowing investigators to pivot seamlessly between catalog tools and live correlation queries.
 

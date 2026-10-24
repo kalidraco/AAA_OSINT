@@ -18,8 +18,15 @@ const url = require('url');
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '127.0.0.1';
 const SITE_DIR = path.join(__dirname, 'site');
+const INVESTIGATIONS_DIR = path.join(__dirname, 'data', 'investigations');
 const INTELX_API_BASE = 'https://2.intelx.io';
 const USER_AGENT = 'AAA_OSINT-Client/2.1.0 (+https://github.com/kalidraco/AAA_OSINT)';
+
+function ensureInvestigationsDir() {
+  if (!fs.existsSync(INVESTIGATIONS_DIR)) {
+    fs.mkdirSync(INVESTIGATIONS_DIR, { recursive: true });
+  }
+}
 
 // MIME Types map
 const MIME_TYPES = {
@@ -80,7 +87,7 @@ function sendJSON(res, statusCode, data) {
     'Cache-Control': 'no-store, no-cache, must-revalidate',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type, x-intelx-key, x-intelx-mock',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   });
   res.end(JSON.stringify(data));
 }
@@ -552,6 +559,129 @@ async function handleApiRequest(req, res, parsedUrl) {
 }
 
 /**
+ * Handle Investigation API requests
+ * - GET /api/investigations — List all investigations
+ * - POST /api/investigation — Save / create investigation
+ * - GET /api/investigation/:id — Retrieve investigation by ID
+ * - PUT /api/investigation/:id — Update investigation by ID
+ * - DELETE /api/investigation/:id — Delete investigation by ID
+ */
+async function handleInvestigationRequest(req, res, parsedUrl) {
+  const pathname = parsedUrl.pathname;
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    });
+    return res.end();
+  }
+
+  ensureInvestigationsDir();
+
+  // Route: GET /api/investigations
+  if (pathname === '/api/investigations' && req.method === 'GET') {
+    try {
+      const files = fs.readdirSync(INVESTIGATIONS_DIR);
+      const list = [];
+      for (const file of files) {
+        if (!file.endsWith('.json')) continue;
+        try {
+          const raw = fs.readFileSync(path.join(INVESTIGATIONS_DIR, file), 'utf-8');
+          const data = JSON.parse(raw);
+          list.push({
+            id: data.id || file.replace(/\.json$/, ''),
+            name: data.name || 'Investigation sans titre',
+            context: data.context || '',
+            status: data.status || 'draft',
+            createdAt: data.createdAt || null,
+            updatedAt: data.updatedAt || null,
+            indicatorCount: Array.isArray(data.indicators) ? data.indicators.length : 0,
+            findingsCount: Array.isArray(data.findings) ? data.findings.length : 0,
+            correlationsCount: Array.isArray(data.correlations) ? data.correlations.length : 0,
+          });
+        } catch { /* skip invalid file */ }
+      }
+      list.sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+      return sendJSON(res, 200, list);
+    } catch (err) {
+      return sendJSON(res, 500, { ok: false, error: `Erreur lecture des enquêtes: ${err.message}` });
+    }
+  }
+
+  // Route: POST /api/investigation (Create / save)
+  if (pathname === '/api/investigation' && req.method === 'POST') {
+    try {
+      const raw = await readRequestBody(req);
+      const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (!data || typeof data !== 'object') {
+        return sendJSON(res, 400, { ok: false, error: 'Données d\'investigation invalides' });
+      }
+      const id = (data.id || `inv_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`).replace(/[^a-zA-Z0-9_-]/g, '');
+      data.id = id;
+      data.updatedAt = new Date().toISOString();
+      if (!data.createdAt) data.createdAt = data.updatedAt;
+
+      const filePath = path.join(INVESTIGATIONS_DIR, `${id}.json`);
+      fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
+      return sendJSON(res, 200, { ok: true, id, investigation: data });
+    } catch (err) {
+      return sendJSON(res, 500, { ok: false, error: `Erreur sauvegarde investigation: ${err.message}` });
+    }
+  }
+
+  // Match /api/investigation/:id
+  const matchId = pathname.match(/^\/api\/investigation\/([^/]+)$/);
+  if (matchId) {
+    const rawId = decodeURIComponent(matchId[1]);
+    const safeId = rawId.replace(/[^a-zA-Z0-9_-]/g, '');
+    const filePath = path.join(INVESTIGATIONS_DIR, `${safeId}.json`);
+
+    // GET /api/investigation/:id
+    if (req.method === 'GET') {
+      if (!fs.existsSync(filePath)) {
+        return sendJSON(res, 404, { ok: false, error: 'Enquête introuvable' });
+      }
+      try {
+        const raw = fs.readFileSync(filePath, 'utf-8');
+        return sendJSON(res, 200, JSON.parse(raw));
+      } catch (err) {
+        return sendJSON(res, 500, { ok: false, error: `Erreur lecture enquête: ${err.message}` });
+      }
+    }
+
+    // PUT /api/investigation/:id
+    if (req.method === 'PUT' || req.method === 'POST') {
+      try {
+        const raw = await readRequestBody(req);
+        const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        data.id = safeId;
+        data.updatedAt = new Date().toISOString();
+        fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
+        return sendJSON(res, 200, { ok: true, id: safeId, investigation: data });
+      } catch (err) {
+        return sendJSON(res, 500, { ok: false, error: `Erreur mise à jour enquête: ${err.message}` });
+      }
+    }
+
+    // DELETE /api/investigation/:id
+    if (req.method === 'DELETE') {
+      try {
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+        return sendJSON(res, 200, { ok: true, id: safeId });
+      } catch (err) {
+        return sendJSON(res, 500, { ok: false, error: `Erreur suppression enquête: ${err.message}` });
+      }
+    }
+  }
+
+  return sendJSON(res, 404, { ok: false, error: `Route investigation introuvable: ${pathname}` });
+}
+
+/**
  * Handle Static Files from site/ directory
  */
 function handleStaticFile(req, res, pathname) {
@@ -605,6 +735,8 @@ const server = http.createServer((req, res) => {
 
   if (pathname.startsWith('/api/intelx/')) {
     handleApiRequest(req, res, parsedUrl);
+  } else if (pathname === '/api/investigations' || pathname.startsWith('/api/investigation')) {
+    handleInvestigationRequest(req, res, parsedUrl);
   } else {
     handleStaticFile(req, res, pathname);
   }
@@ -617,6 +749,7 @@ if (require.main === module) {
     console.log(`🚀 AAA_OSINT Investigation Workspace + IntelX Module`);
     console.log(`🌐 Application URL: http://${HOST}:${PORT}`);
     console.log(`🔒 Proxy API IntelX: http://${HOST}:${PORT}/api/intelx/status`);
+    console.log(`📁 API Investigations: http://${HOST}:${PORT}/api/investigations`);
     console.log(`🔑 Clé INTELX_KEY d'environnement: ${process.env.INTELX_KEY ? 'Détectée (Active)' : 'Non définie (Configurable dans l\'UI)'}`);
     if (process.env.INTELX_MOCK === 'true' || process.env.INTELX_MOCK === '1') {
       console.log(`🧪 Mode Simulation: ACTIF (requêtes simulées, zéro quota consommé)`);
@@ -625,4 +758,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { server, forwardToIntelX, resolveApiKey };
+module.exports = { server, forwardToIntelX, resolveApiKey, handleInvestigationRequest };
