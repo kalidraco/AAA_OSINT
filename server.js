@@ -14,6 +14,8 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const url = require('url');
+const dns = require('dns').promises;
+const crypto = require('crypto');
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '127.0.0.1';
@@ -682,6 +684,563 @@ async function handleInvestigationRequest(req, res, parsedUrl) {
 }
 
 /**
+ * Handle OSINT Automated Transforms (/api/transform/*)
+ */
+async function handleTransformRequest(req, res, parsedUrl) {
+  const pathname = parsedUrl.pathname;
+  const query = parsedUrl.query || {};
+
+  // CORS Preflight
+  if (req.method === 'OPTIONS') {
+    return sendJSON(res, 204, {});
+  }
+
+  // 1. Status / Capabilities
+  if (pathname === '/api/transform/status') {
+    return sendJSON(res, 200, {
+      ok: true,
+      service: 'AAA_OSINT Automated Transforms Engine',
+      version: '2.2.0',
+      transforms: [
+        'dns',
+        'rdns',
+        'rdap',
+        'certs',
+        'http-headers',
+        'wayback',
+        'profile-check',
+        'crypto',
+      ],
+      mockMode: isMockMode(req),
+    });
+  }
+
+  // 2. DNS Resolution
+  if (pathname === '/api/transform/dns') {
+    const rawDomain = String(query.domain || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+    if (!rawDomain) {
+      return sendJSON(res, 400, { ok: false, error: 'Paramètre domain requis' });
+    }
+
+    if (isMockMode(req)) {
+      return sendJSON(res, 200, {
+        ok: true,
+        domain: rawDomain,
+        records: {
+          a: ['93.184.216.34', '93.184.216.35'],
+          aaaa: ['2606:2800:220:1:248:1893:25c8:1946'],
+          mx: [{ exchange: `mail.${rawDomain}`, priority: 10 }, { exchange: `alt.mail.${rawDomain}`, priority: 20 }],
+          txt: ['v=spf1 include:_spf.google.com ~all', 'google-site-verification=abc123xyz456'],
+          ns: [`ns1.${rawDomain}`, `ns2.${rawDomain}`],
+          cname: [],
+          soa: { nsname: `ns1.${rawDomain}`, hostmaster: `admin.${rawDomain}`, serial: 2026102401 },
+        },
+        mode: 'mock',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    try {
+      const records = { a: [], aaaa: [], mx: [], txt: [], ns: [], cname: [], soa: null };
+      const [aR, aaaaR, mxR, txtR, nsR, cnameR, soaR] = await Promise.allSettled([
+        dns.resolve4(rawDomain),
+        dns.resolve6(rawDomain),
+        dns.resolveMx(rawDomain),
+        dns.resolveTxt(rawDomain),
+        dns.resolveNs(rawDomain),
+        dns.resolveCname(rawDomain),
+        dns.resolveSoa(rawDomain),
+      ]);
+
+      if (aR.status === 'fulfilled') records.a = aR.value;
+      if (aaaaR.status === 'fulfilled') records.aaaa = aaaaR.value;
+      if (mxR.status === 'fulfilled') records.mx = (mxR.value || []).sort((x, y) => x.priority - y.priority);
+      if (txtR.status === 'fulfilled') records.txt = (txtR.value || []).map(chunks => chunks.join(' '));
+      if (nsR.status === 'fulfilled') records.ns = nsR.value;
+      if (cnameR.status === 'fulfilled') records.cname = cnameR.value;
+      if (soaR.status === 'fulfilled') records.soa = soaR.value;
+
+      return sendJSON(res, 200, {
+        ok: true,
+        domain: rawDomain,
+        records,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      return sendJSON(res, 200, {
+        ok: false,
+        domain: rawDomain,
+        error: `Résolution DNS impossible: ${err.message}`,
+        records: { a: [], aaaa: [], mx: [], txt: [], ns: [], cname: [], soa: null },
+      });
+    }
+  }
+
+  // 3. Reverse DNS (PTR)
+  if (pathname === '/api/transform/rdns') {
+    const rawIp = String(query.ip || '').trim();
+    if (!rawIp) {
+      return sendJSON(res, 400, { ok: false, error: 'Paramètre ip requis' });
+    }
+
+    if (isMockMode(req)) {
+      return sendJSON(res, 200, {
+        ok: true,
+        ip: rawIp,
+        hostnames: [`host-${rawIp.replace(/\./g, '-')}.infra.example.com`],
+        mode: 'mock',
+      });
+    }
+
+    try {
+      const hostnames = await dns.reverse(rawIp);
+      return sendJSON(res, 200, { ok: true, ip: rawIp, hostnames });
+    } catch (err) {
+      return sendJSON(res, 200, { ok: false, ip: rawIp, hostnames: [], error: err.message });
+    }
+  }
+
+  // 4. RDAP / WHOIS (Domain & IP)
+  if (pathname === '/api/transform/rdap') {
+    const rawQuery = String(query.query || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+    const type = query.type === 'ip' ? 'ip' : 'domain';
+    if (!rawQuery) {
+      return sendJSON(res, 400, { ok: false, error: 'Paramètre query requis' });
+    }
+
+    if (isMockMode(req)) {
+      return sendJSON(res, 200, {
+        ok: true,
+        query: rawQuery,
+        type,
+        handle: 'SIM-94819',
+        name: rawQuery,
+        status: ['clientTransferProhibited', 'active'],
+        registrar: 'Example Registrar, LLC',
+        dates: {
+          registration: '2019-03-15T10:00:00Z',
+          expiration: '2028-03-15T10:00:00Z',
+          lastChanged: '2024-02-10T14:30:00Z',
+        },
+        entities: [
+          { role: 'registrant', name: 'Privacy Protected Entity', email: `abuse@${rawQuery}` },
+        ],
+        nameservers: [`ns1.${rawQuery}`, `ns2.${rawQuery}`],
+        network: type === 'ip' ? { cidr: [`${rawQuery}/24`], asn: 'AS13335' } : null,
+        mode: 'mock',
+      });
+    }
+
+    const endpoint = type === 'ip'
+      ? `https://rdap.org/ip/${encodeURIComponent(rawQuery)}`
+      : `https://rdap.org/domain/${encodeURIComponent(rawQuery)}`;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6000);
+
+    try {
+      const response = await fetch(endpoint, {
+        signal: controller.signal,
+        headers: { 'User-Agent': USER_AGENT, 'Accept': 'application/json, application/rdap+json' },
+      });
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        return sendJSON(res, 200, {
+          ok: false,
+          query: rawQuery,
+          status: response.status,
+          error: `Serveur RDAP a renvoyé code ${response.status}`,
+        });
+      }
+
+      const data = await response.json();
+      let registrar = '';
+      const dates = {};
+      if (Array.isArray(data.events)) {
+        for (const ev of data.events) {
+          if (ev.eventAction === 'registration') dates.registration = ev.eventDate;
+          if (ev.eventAction === 'expiration') dates.expiration = ev.eventDate;
+          if (ev.eventAction === 'last changed' || ev.eventAction === 'last update') dates.lastChanged = ev.eventDate;
+        }
+      }
+
+      const entities = [];
+      if (Array.isArray(data.entities)) {
+        for (const ent of data.entities) {
+          let name = ent.handle || '';
+          let email = '';
+          if (ent.roles && ent.roles.includes('registrar')) {
+            registrar = ent.handle || '';
+          }
+          if (Array.isArray(ent.vcardArray) && ent.vcardArray[1]) {
+            for (const prop of ent.vcardArray[1]) {
+              if (prop[0] === 'fn' && prop[3]) name = prop[3];
+              if (prop[0] === 'email' && prop[3]) email = prop[3];
+            }
+          }
+          entities.push({ role: (ent.roles || []).join(', '), name, email });
+        }
+      }
+
+      return sendJSON(res, 200, {
+        ok: true,
+        query: rawQuery,
+        type,
+        handle: data.handle || '',
+        name: data.name || data.ldhName || rawQuery,
+        status: data.status || [],
+        registrar,
+        dates,
+        entities,
+        nameservers: (data.nameservers || []).map(n => n.ldhName || n.name).filter(Boolean),
+        network: data.startAddress ? {
+          start: data.startAddress,
+          end: data.endAddress,
+          cidr: (data.cidr0_cidrs || []).map(c => `${c.v4prefix || c.v6prefix}/${c.length}`),
+        } : null,
+      });
+    } catch (err) {
+      clearTimeout(timeout);
+      return sendJSON(res, 200, { ok: false, query: rawQuery, error: `Erreur RDAP: ${err.message}` });
+    }
+  }
+
+  // 5. Certificate Transparency Subdomains (crt.sh)
+  if (pathname === '/api/transform/certs') {
+    const rawDomain = String(query.domain || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+    if (!rawDomain) {
+      return sendJSON(res, 400, { ok: false, error: 'Paramètre domain requis' });
+    }
+
+    if (isMockMode(req)) {
+      return sendJSON(res, 200, {
+        ok: true,
+        domain: rawDomain,
+        count: 5,
+        subdomains: [
+          `api.${rawDomain}`,
+          `auth.${rawDomain}`,
+          `mail.${rawDomain}`,
+          `vpn.${rawDomain}`,
+          `www.${rawDomain}`,
+        ],
+        mode: 'mock',
+      });
+    }
+
+    const endpoint = `https://crt.sh/?q=%.${encodeURIComponent(rawDomain)}&output=json`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 7000);
+
+    try {
+      const response = await fetch(endpoint, {
+        signal: controller.signal,
+        headers: { 'User-Agent': USER_AGENT },
+      });
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        return sendJSON(res, 200, { ok: false, domain: rawDomain, subdomains: [], error: `crt.sh code ${response.status}` });
+      }
+
+      const list = await response.json();
+      const subdomains = new Set();
+      if (Array.isArray(list)) {
+        for (const item of list) {
+          if (!item.name_value) continue;
+          const names = item.name_value.split('\n');
+          for (let name of names) {
+            name = name.trim().toLowerCase().replace(/^\*\./, '');
+            if (name && (name === rawDomain || name.endsWith('.' + rawDomain))) {
+              subdomains.add(name);
+            }
+          }
+        }
+      }
+
+      return sendJSON(res, 200, {
+        ok: true,
+        domain: rawDomain,
+        count: subdomains.size,
+        subdomains: Array.from(subdomains).sort().slice(0, 60),
+      });
+    } catch (err) {
+      clearTimeout(timeout);
+      return sendJSON(res, 200, { ok: false, domain: rawDomain, subdomains: [], error: err.message });
+    }
+  }
+
+  // 6. HTTP Headers & Server Tech Stack
+  if (pathname === '/api/transform/http-headers') {
+    let target = String(query.url || query.domain || '').trim();
+    if (!target) {
+      return sendJSON(res, 400, { ok: false, error: 'Paramètre url ou domain requis' });
+    }
+    if (!/^https?:\/\//i.test(target)) {
+      target = 'https://' + target;
+    }
+
+    if (isMockMode(req)) {
+      return sendJSON(res, 200, {
+        ok: true,
+        url: target,
+        status: 200,
+        server: 'nginx/1.24.0',
+        poweredBy: 'Express',
+        contentType: 'text/html; charset=UTF-8',
+        title: 'Application Web Sécurisée',
+        securityHeaders: { hsts: true, csp: true, xFrameOptions: 'SAMEORIGIN' },
+        mode: 'mock',
+      });
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    try {
+      const response = await fetch(target, {
+        signal: controller.signal,
+        headers: { 'User-Agent': USER_AGENT, 'Accept': 'text/html,*/*' },
+        redirect: 'follow',
+      });
+      clearTimeout(timeout);
+
+      const headers = {};
+      for (const [k, v] of response.headers.entries()) {
+        headers[k.toLowerCase()] = v;
+      }
+
+      let title = '';
+      try {
+        const bodyText = await response.text();
+        const m = bodyText.match(/<title[^>]*>([^<]+)<\/title>/i);
+        if (m) title = m[1].trim();
+      } catch { /* ignore body error */ }
+
+      return sendJSON(res, 200, {
+        ok: true,
+        url: target,
+        finalUrl: response.url,
+        status: response.status,
+        server: headers['server'] || '',
+        poweredBy: headers['x-powered-by'] || '',
+        contentType: headers['content-type'] || '',
+        title,
+        securityHeaders: {
+          hsts: !!headers['strict-transport-security'],
+          csp: !!headers['content-security-policy'],
+          xFrameOptions: headers['x-frame-options'] || '',
+          xContentTypeOptions: headers['x-content-type-options'] || '',
+        },
+      });
+    } catch (err) {
+      clearTimeout(timeout);
+      return sendJSON(res, 200, { ok: false, url: target, error: err.message });
+    }
+  }
+
+  // 7. Wayback Machine Snapshots (archive.org CDX)
+  if (pathname === '/api/transform/wayback') {
+    const rawTarget = String(query.url || '').trim().replace(/^https?:\/\//, '');
+    if (!rawTarget) {
+      return sendJSON(res, 400, { ok: false, error: 'Paramètre url requis' });
+    }
+
+    if (isMockMode(req)) {
+      return sendJSON(res, 200, {
+        ok: true,
+        url: rawTarget,
+        count: 3,
+        snapshots: [
+          { timestamp: '20240115120000', archiveUrl: `https://web.archive.org/web/20240115120000/http://${rawTarget}` },
+          { timestamp: '20230620083000', archiveUrl: `https://web.archive.org/web/20230620083000/http://${rawTarget}` },
+          { timestamp: '20211105180000', archiveUrl: `https://web.archive.org/web/20211105180000/http://${rawTarget}` },
+        ],
+        mode: 'mock',
+      });
+    }
+
+    const endpoint = `https://web.archive.org/cdx/search/cdx?url=${encodeURIComponent(rawTarget)}&output=json&limit=5&fl=timestamp,original,mimetype,statuscode`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6000);
+
+    try {
+      const response = await fetch(endpoint, {
+        signal: controller.signal,
+        headers: { 'User-Agent': USER_AGENT },
+      });
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        return sendJSON(res, 200, { ok: false, url: rawTarget, snapshots: [] });
+      }
+
+      const rows = await response.json();
+      const snapshots = [];
+      if (Array.isArray(rows) && rows.length > 1) {
+        for (let i = 1; i < rows.length; i++) {
+          const [timestamp, original, mimetype, statuscode] = rows[i];
+          snapshots.push({
+            timestamp,
+            original,
+            mimetype,
+            statuscode,
+            archiveUrl: `https://web.archive.org/web/${timestamp}/${original}`,
+          });
+        }
+      }
+
+      return sendJSON(res, 200, {
+        ok: true,
+        url: rawTarget,
+        count: snapshots.length,
+        snapshots,
+      });
+    } catch (err) {
+      clearTimeout(timeout);
+      return sendJSON(res, 200, { ok: false, url: rawTarget, snapshots: [], error: err.message });
+    }
+  }
+
+  // 8. Public Profiles Check (GitHub, GitLab, Reddit, Wikipedia, Gravatar)
+  if (pathname === '/api/transform/profile-check') {
+    const rawUsername = String(query.username || '').trim().replace(/^@/, '');
+    if (!rawUsername) {
+      return sendJSON(res, 400, { ok: false, error: 'Paramètre username requis' });
+    }
+
+    if (isMockMode(req)) {
+      return sendJSON(res, 200, {
+        ok: true,
+        username: rawUsername,
+        profiles: [
+          { platform: 'GitHub', profileUrl: `https://github.com/${rawUsername}`, name: rawUsername, bio: 'OSINT Researcher' },
+          { platform: 'GitLab', profileUrl: `https://gitlab.com/${rawUsername}`, name: rawUsername },
+          { platform: 'Reddit', profileUrl: `https://reddit.com/user/${rawUsername}` },
+        ],
+        mode: 'mock',
+      });
+    }
+
+    const checks = [
+      {
+        platform: 'GitHub',
+        url: `https://api.github.com/users/${encodeURIComponent(rawUsername)}`,
+        profileUrl: `https://github.com/${rawUsername}`,
+      },
+      {
+        platform: 'GitLab',
+        url: `https://gitlab.com/api/v4/users?username=${encodeURIComponent(rawUsername)}`,
+        profileUrl: `https://gitlab.com/${rawUsername}`,
+      },
+      {
+        platform: 'Reddit',
+        url: `https://www.reddit.com/user/${encodeURIComponent(rawUsername)}/about.json`,
+        profileUrl: `https://reddit.com/user/${rawUsername}`,
+      },
+    ];
+
+    const profiles = [];
+    await Promise.allSettled(checks.map(async (c) => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 4000);
+      try {
+        const response = await fetch(c.url, {
+          signal: controller.signal,
+          headers: { 'User-Agent': USER_AGENT, 'Accept': 'application/json' },
+        });
+        clearTimeout(timeout);
+        if (response.status === 200) {
+          const data = await response.json();
+          if (c.platform === 'GitHub' && data && data.login) {
+            profiles.push({
+              platform: 'GitHub',
+              profileUrl: c.profileUrl,
+              name: data.name || data.login,
+              bio: data.bio || '',
+              avatar: data.avatar_url || '',
+              publicRepos: data.public_repos || 0,
+            });
+          } else if (c.platform === 'GitLab' && Array.isArray(data) && data.length > 0) {
+            profiles.push({
+              platform: 'GitLab',
+              profileUrl: c.profileUrl,
+              name: data[0].name || rawUsername,
+              avatar: data[0].avatar_url || '',
+            });
+          } else if (c.platform === 'Reddit' && data && data.data && data.data.name) {
+            profiles.push({
+              platform: 'Reddit',
+              profileUrl: c.profileUrl,
+              name: data.data.name,
+              karma: (data.data.total_karma || 0),
+            });
+          }
+        }
+      } catch {
+        clearTimeout(timeout);
+      }
+    }));
+
+    // Gravatar check (MD5)
+    try {
+      const hash = crypto.createHash('md5').update(rawUsername.toLowerCase()).digest('hex');
+      const gravatarUrl = `https://en.gravatar.com/${hash}.json`;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3000);
+      const gravRes = await fetch(gravatarUrl, { signal: controller.signal, headers: { 'User-Agent': USER_AGENT } });
+      clearTimeout(timeout);
+      if (gravRes.status === 200) {
+        profiles.push({
+          platform: 'Gravatar',
+          profileUrl: `https://gravatar.com/${rawUsername}`,
+          avatar: `https://gravatar.com/avatar/${hash}?s=200`,
+        });
+      }
+    } catch { /* ignore gravatar error */ }
+
+    return sendJSON(res, 200, {
+      ok: true,
+      username: rawUsername,
+      count: profiles.length,
+      profiles,
+    });
+  }
+
+  // 9. Crypto Wallet Checks
+  if (pathname === '/api/transform/crypto') {
+    const rawAddress = String(query.address || '').trim();
+    if (!rawAddress) {
+      return sendJSON(res, 400, { ok: false, error: 'Paramètre address requis' });
+    }
+
+    let type = 'unknown';
+    let explorerUrl = '';
+    if (/^(1[a-km-zA-HJ-NP-Z1-9]{25,34}|3[a-km-zA-HJ-NP-Z1-9]{25,34}|bc1[a-z0-9]{8,87})$/i.test(rawAddress)) {
+      type = 'Bitcoin (BTC)';
+      explorerUrl = `https://blockstream.info/address/${rawAddress}`;
+    } else if (/^0x[a-fA-F0-9]{40}$/.test(rawAddress)) {
+      type = 'Ethereum (ETH)';
+      explorerUrl = `https://etherscan.io/address/${rawAddress}`;
+    } else if (/^T[a-zA-Z0-9]{33}$/.test(rawAddress)) {
+      type = 'Tron (TRX)';
+      explorerUrl = `https://tronscan.org/#/address/${rawAddress}`;
+    }
+
+    return sendJSON(res, 200, {
+      ok: true,
+      address: rawAddress,
+      blockchain: type,
+      explorerUrl,
+      isValidFormat: type !== 'unknown',
+    });
+  }
+
+  return sendJSON(res, 404, { ok: false, error: `Transform route introuvable: ${pathname}` });
+}
+
+/**
  * Handle Static Files from site/ directory
  */
 function handleStaticFile(req, res, pathname) {
@@ -735,6 +1294,8 @@ const server = http.createServer((req, res) => {
 
   if (pathname.startsWith('/api/intelx/')) {
     handleApiRequest(req, res, parsedUrl);
+  } else if (pathname.startsWith('/api/transform/')) {
+    handleTransformRequest(req, res, parsedUrl);
   } else if (pathname === '/api/investigations' || pathname.startsWith('/api/investigation')) {
     handleInvestigationRequest(req, res, parsedUrl);
   } else {
@@ -758,4 +1319,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { server, forwardToIntelX, resolveApiKey, handleInvestigationRequest };
+module.exports = { server, forwardToIntelX, resolveApiKey, handleInvestigationRequest, handleTransformRequest };

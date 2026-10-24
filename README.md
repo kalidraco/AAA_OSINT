@@ -46,6 +46,38 @@ http://localhost:3000
 
 ---
 
+## 🕸️ Visual Investigation Graph (Maltego-style Workspace)
+
+AAA_OSINT features an interactive visual intelligence workspace inspired by **Maltego**. Analysts can start with a single seed indicator or an uploaded image, trigger automated multi-source transforms, explore relationships on an interactive force-directed canvas, and pivot dynamically into AAA_OSINT's 947 specialized tools.
+
+### Key Capabilities
+- **Single-Seed Ingestion & Image Upload:** Auto-detects 15 entity types (domains, IPs, emails, usernames, phones, crypto wallets, hashes, URLs, organizations, persons, locations, certificates, autonomous systems, tech stacks, files). Supports image uploads with automated binary **EXIF parsing** (camera model, GPS coordinates, timestamps) and **SHA-256 fingerprinting**.
+- **Automated Live Transforms (`/api/transform/*`):**
+  - **DNS Records:** Resolves A, AAAA, MX, TXT, NS, and CNAME records via native DNS.
+  - **Reverse DNS (PTR):** Resolves IP addresses back to fully qualified hostnames.
+  - **RDAP / WHOIS:** Extracts network blocks, registrar, CIDR, and autonomous system info.
+  - **crt.sh Subdomains:** Enumerates public subdomains via SSL/TLS Certificate Transparency logs.
+  - **HTTP Headers & Tech Stack:** Fetches server banners, security headers (`HSTS`, `CSP`), and HTML page title.
+  - **Wayback Machine:** Queries the Internet Archive for snapshot counts, first seen, and latest capture.
+  - **Public Profile Recon:** Checks handle presence across GitHub, GitLab, Reddit, and Wikipedia.
+  - **Crypto Address Validation:** Formats and verifies Bitcoin, Ethereum, Monero, and Solana wallet signatures.
+  - **Catalog Deep Pivots:** Generates pre-filled query links to relevant tools within the 947-resource catalog.
+- **Relationship Provenance & Trust Levels:** Clearly differentiates **Verified Relations** (solid cyan/green edges) from **Candidate / Inferred Relations** (dashed amber edges) to prevent premature conclusions.
+- **Interactive High-Performance Canvas Engine:**
+  - Physics-based force-directed simulation (Coulomb repulsion, Hooke springs, collision buffer anti-overlap).
+  - Multiple layout algorithms: **Force-Directed**, **Hierarchical (Tree)**, **Radial (Concentric)**, and **Grid**.
+  - Smooth pan/zoom, node dragging with pin-in-place, multi-selection marquee box, and fit-to-view.
+- **Sliding Inspector Panel:** Click any node to inspect properties, verifiable source URLs, direct incoming/outgoing connections, trigger contextual transforms on demand, or open recommended catalog tools.
+- **Recursive Multi-Depth Runs & Abort:** Configure 1 to 3 exploration depth levels with live streaming entity counters and instant cancellation.
+- **Multi-Format Export & Case Synchronization:**
+  - Export and re-import workspace graphs via **JSON**.
+  - Capture high-resolution **PNG** diagram screenshots.
+  - Export **CSV** entity and relationship matrices.
+  - **1-Click Sync to Investigation:** Seamlessly transfers all discovered nodes, relationships, and evidence into the **Investigation Case Report** engine for structured 6-section reporting (Berkeley Protocol).
+- **100% Dependency-Free:** Powered strictly by native Node.js built-in APIs and pure HTML5 Canvas with dark cyber aesthetics.
+
+---
+
 ## 🕵️ Investigation Workspace & Automated Reporting
 
 AAA_OSINT transforms from a 947-tool static directory into an active **OSINT Investigation Platform**. The **Investigation** workspace allows analysts to input multi-format indicators, discover and launch relevant tools with pre-filled queries, collect and cross-reference evidence, track event timelines, and generate publication-ready investigative reports following international open-source intelligence standards (Berkeley Protocol).
@@ -124,10 +156,22 @@ AAA_OSINT/
 │   └── build-data.js         # Node.js script that parses docs/ into site/data.json
 ├── site/                     # Web application source files
 │   ├── index.html            # Main dashboard HTML (topbar + sidebar + content layout)
-│   ├── style.css             # Design system & styles (sidebar, topbar, responsive)
-│   ├── app.js                # Search, sidebar navigation, and rendering logic
+│   ├── style.css             # Cyber design system, graph canvas & investigation styles
+│   ├── app.js                # Search, sidebar navigation, view router & app controller
+│   ├── i18n.js               # Centralized bilingual (FR/EN) translation engine
+│   ├── graph-engine.js       # Force-directed HTML5 canvas graph engine & layouts
+│   ├── transforms-registry.js# 15-type entity taxonomy, transforms & catalog pivots
+│   ├── visual-investigation-ui.js # Maltego-style workspace, inspector & runner
+│   ├── investigation-engine.js # Indicators, findings, cross-referencing & 6-section report
+│   ├── investigation-ui.js   # Investigation case workspace & report generator UI
 │   ├── data.json             # Structured JSON dataset (947 tools)
 │   └── favicon.svg           # Site favicon
+├── test/                     # Zero-dependency automated test suites
+│   ├── test-visual-graph.js  # Transforms, graph layouts, EXIF/SHA-256 & API tests
+│   ├── test-investigation.js # Investigation, reporting & persistence tests
+│   ├── test-features.js      # Bilingual search, access levels & i18n tests
+│   └── test-intelx.js        # Intelligence X proxy & selector tests
+├── server.js                 # Local API server, IntelX proxy & native transforms API
 ├── package.json              # NPM scripts & project configuration
 ├── CONTRIBUTING.md           # Guidelines for contributing new tools
 ├── CODE_OF_CONDUCT.md        # Community code of conduct

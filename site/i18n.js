@@ -263,7 +263,17 @@
       toast_intelx_scan_done: "Recherche IntelX terminée : {count} résultats trouvés.",
       confidence_confirmed: "Confirmé",
       confidence_probable: "Probable",
-      confidence_uncertain: "Incertain"
+      confidence_uncertain: "Incertain",
+      nav_visual_graph: "Recherche Visuelle",
+      visual_graph_view_title: "🕸️ Graphe d'Investigation Visuelle",
+      visual_graph_view_count: "Mode Maltego · Transforms dynamiques",
+      vig_seed_placeholder: "Saisir un nom de domaine, email, IP, pseudo, crypto...",
+      vig_btn_launch: "Lancer l'investigation",
+      vig_btn_stop: "Arrêter",
+      vig_btn_image: "Image",
+      vig_upload_image_title: "Importer une image pour analyse EXIF et recherche inversée",
+      vig_inspector_empty_title: "Inspecteur d'Entité",
+      vig_inspector_empty_desc: "Cliquez sur n'importe quel nœud du graphe pour examiner ses propriétés, ses sources et lancer des transformations ciblées (Transforms à la Maltego)."
     },
     en: {
       app_title: "AAA_OSINT — Intelligence Workspace & OSINT Catalog",
@@ -382,7 +392,17 @@
       toast_intelx_scan_done: "IntelX search completed: {count} results found.",
       confidence_confirmed: "Confirmed",
       confidence_probable: "Probable",
-      confidence_uncertain: "Uncertain"
+      confidence_uncertain: "Uncertain",
+      nav_visual_graph: "Visual Graph",
+      visual_graph_view_title: "🕸️ Visual Investigation Graph",
+      visual_graph_view_count: "Maltego Mode · Dynamic Transforms",
+      vig_seed_placeholder: "Enter domain, email, IP, handle, crypto address...",
+      vig_btn_launch: "Launch Investigation",
+      vig_btn_stop: "Stop",
+      vig_btn_image: "Image",
+      vig_upload_image_title: "Upload image for EXIF metadata and reverse search",
+      vig_inspector_empty_title: "Entity Inspector",
+      vig_inspector_empty_desc: "Click any node on the graph to inspect properties, sources, and run targeted transforms (Maltego-style)."
     }
   };
 

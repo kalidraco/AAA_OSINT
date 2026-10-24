@@ -79,6 +79,10 @@
   let investigationEngine = null;
   let investigationUI = null;
 
+  // Visual Investigation (Maltego-style) Instances
+  let transformsRegistry = null;
+  let visualInvestigationUI = null;
+
   // LocalStorage Stores
   const favorites = new Set(loadJSON('aaa_favorites', []));
   let recentTools = loadJSON('aaa_recent', []);
@@ -657,6 +661,30 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  // --- Switch to Visual Investigation Graph (Maltego-style) ---
+  function switchToVisualGraph(seedValue = '') {
+    activeView = 'visual-graph';
+    activeSearchCategoryFilter = null;
+    searchQuery = '';
+    searchInput.value = '';
+    searchClear.style.display = 'none';
+    searchKbd.style.display = '';
+
+    updateActiveSidebarItem();
+    render();
+
+    if (seedValue && visualInvestigationUI) {
+      visualInvestigationUI.render(seedValue);
+    }
+
+    if (isMobile()) {
+      sidebar.classList.remove('is-open');
+      sidebarOverlay.classList.remove('is-visible');
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   // --- Workspace Rendering Engine ---
   function render() {
     keyboardFocusedIndex = -1;
@@ -666,6 +694,14 @@
 
     // Update Context / Breadcrumb Bar
     updateContextBar();
+
+    // 0a. Visual Investigation Graph View (Maltego)
+    if (activeView === 'visual-graph' && !searchQuery) {
+      if (visualInvestigationUI) {
+        visualInvestigationUI.render();
+      }
+      return;
+    }
 
     // 0. Investigation Workspace View
     if (activeView === 'investigation' && !searchQuery) {
@@ -736,6 +772,11 @@
       contextTitle.textContent = `🔓 ${t('no_reg_title')}`;
       const noRegCount = DATA.noRegistrationCount || 501;
       contextCount.textContent = t('no_reg_count', { count: noRegCount });
+    } else if (activeView === 'visual-graph') {
+      breadcrumbRoot.textContent = t('workspace');
+      breadcrumbCurrent.textContent = t('nav_visual_graph') || 'Recherche Visuelle';
+      contextTitle.textContent = t('visual_graph_view_title') || '🕸️ Graphe d\'Investigation Visuelle';
+      contextCount.textContent = t('visual_graph_view_count') || 'Mode Maltego · Transforms dynamiques';
     } else if (activeView === 'investigation') {
       breadcrumbRoot.textContent = t('workspace');
       breadcrumbCurrent.textContent = t('nav_investigation') || 'Investigation';
@@ -1212,6 +1253,18 @@
       switchToInvestigation(query);
     });
     resultsChips.appendChild(invSearchChip);
+
+    // Cross-module Visual Graph (Maltego) action chip
+    const visualGraphChip = document.createElement('button');
+    visualGraphChip.className = 'result-cat-chip result-cat-chip--visual-graph';
+    visualGraphChip.title = isEn
+      ? `Explore "${escapeHtml(query)}" in the Maltego Visual Graph`
+      : `Explorer « ${escapeHtml(query)} » dans le Graphe Visuel (Maltego)`;
+    visualGraphChip.innerHTML = `<span>🕸️</span> ${isEn ? 'Visual Graph' : 'Graphe Visuel'} « <strong>${escapeHtml(query)}</strong> »`;
+    visualGraphChip.addEventListener('click', () => {
+      switchToVisualGraph(query);
+    });
+    resultsChips.appendChild(visualGraphChip);
 
     // Filter categories if specific chip active
     let displayCategories = matchedCategories;
@@ -1730,6 +1783,29 @@
       }
     } catch (e) {
       console.warn('Investigation module initialization deferred or failed:', e);
+    }
+
+    // Initialize Visual Investigation (Maltego-style Graph)
+    try {
+      if (typeof TransformsRegistry !== 'undefined' && typeof VisualInvestigationUI !== 'undefined') {
+        transformsRegistry = new TransformsRegistry.TransformsRegistry({
+          catalogData: DATA,
+          intelxClient,
+        });
+        visualInvestigationUI = new VisualInvestigationUI({
+          container,
+          transformsRegistry,
+          investigationEngine,
+          onNavigate: (view, term) => {
+            if (view === 'investigation') switchToInvestigation(term);
+            if (view === 'intelx') switchToIntelX(term);
+            if (view === 'visual-graph') switchToVisualGraph(term);
+          },
+          showToast,
+        });
+      }
+    } catch (e) {
+      console.warn('Visual graph initialization deferred or failed:', e);
     }
 
     // Build sidebar and render initial view
